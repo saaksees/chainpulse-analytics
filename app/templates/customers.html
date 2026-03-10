@@ -1,0 +1,750 @@
+{% extends 'base.html' %}
+
+{% block title %}Customer Intel{% endblock %}
+
+{% block content %}
+<style>
+/* Enhanced Customer Page Styling */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes customerPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
+}
+
+.cp-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.cp-chart-grid.full {
+    grid-template-columns: 1fr;
+}
+
+.cp-chart-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    position: relative;
+    backdrop-filter: blur(10px);
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(56, 189, 248, 0.05));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.cp-chart-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(124, 58, 237, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.cp-chart-card:hover::before {
+    opacity: 1;
+}
+
+.cp-chart-card.full {
+    grid-column: 1 / -1;
+}
+
+.cp-chart-header {
+    padding: 24px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), transparent);
+}
+
+.cp-chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #F1F5F9, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.cp-chart-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.cp-chart-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.cp-chart-image:hover {
+    transform: scale(1.02);
+}
+
+.cp-insight-card {
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-insight-card:hover {
+    transform: translateX(8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.cp-insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+.cp-insight-content {
+    flex: 1;
+}
+
+.cp-insight-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.cp-insight-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Color-coded insight cards */
+.insight-blue {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05));
+    border-left: 4px solid var(--blue);
+}
+
+.insight-green {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border-left: 4px solid var(--green);
+}
+
+.insight-purple {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+    border-left: 4px solid var(--purple);
+}
+
+.insight-amber {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border-left: 4px solid var(--amber);
+}
+
+.insight-red {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border-left: 4px solid var(--red);
+}
+
+/* Enhanced KPI Cards */
+.cp-kpi-card {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-kpi-card:nth-child(1) { animation-delay: 0.1s; }
+.cp-kpi-card:nth-child(2) { animation-delay: 0.2s; }
+.cp-kpi-card:nth-child(3) { animation-delay: 0.3s; }
+.cp-kpi-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Chart Cards Animation Delays */
+.cp-chart-card:nth-child(1) { animation-delay: 0.2s; }
+.cp-chart-card:nth-child(2) { animation-delay: 0.4s; }
+.cp-chart-card:nth-child(3) { animation-delay: 0.6s; }
+.cp-chart-card:nth-child(4) { animation-delay: 0.8s; }
+
+/* Enhanced Export Buttons */
+.cp-export-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(56, 189, 248, 0.1));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    color: var(--purple);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-export-btn:hover {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(56, 189, 248, 0.2));
+    border-color: var(--purple);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
+}
+
+/* Customer Segment Cards */
+.segment-card {
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.4s ease;
+    backdrop-filter: blur(10px);
+    animation: fadeInUp 0.8s ease-out;
+    position: relative;
+    overflow: hidden;
+}
+
+.segment-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.segment-card:hover {
+    transform: translateY(-4px) scale(1.02);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.segment-card:hover::before {
+    opacity: 1;
+}
+
+.segment-card.champions {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.segment-card.champions::before {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), transparent);
+}
+
+.segment-card.loyal {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(56, 189, 248, 0.05));
+    border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.segment-card.loyal::before {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), transparent);
+}
+
+.segment-card.potential {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.segment-card.potential::before {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), transparent);
+}
+
+.segment-card.at-risk {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: customerPulse 3s ease-in-out infinite;
+}
+
+.segment-card.at-risk::before {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), transparent);
+}
+
+.segment-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    animation: float 3s ease-in-out infinite;
+}
+
+.segment-badge {
+    padding: 6px 16px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.segment-badge:hover {
+    transform: scale(1.05);
+}
+
+.badge-vip {
+    background: var(--green-glow);
+    color: var(--green);
+}
+
+.badge-maintain {
+    background: var(--blue-glow);
+    color: var(--blue);
+}
+
+.badge-nurture {
+    background: var(--green-glow);
+    color: var(--green);
+}
+
+.badge-urgent {
+    background: var(--red-glow);
+    color: var(--red);
+}
+</style>
+
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">👥 Customer Segmentation</div>
+    <h1 class="cp-page-title">Customer <span>Intel</span></h1>
+    <p class="cp-page-subtitle">RFM analysis identifying customer behavior patterns and value segments</p>
+    <div style="margin-top:16px">
+        <a href="/api/report/customers" style="display:inline-flex;align-items:center;gap:8px;background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='#38BDF8';this.style.color='#38BDF8'" onmouseout="this.style.borderColor='#334155';this.style.color='#F1F5F9'">📄 Download Report</a>
+    </div>
+</div>
+
+<!-- CUSTOMER OVERVIEW STATS -->
+<div class="cp-kpi-grid">
+    <div class="cp-kpi-card blue">
+        <span class="cp-kpi-icon">👥</span>
+        <div class="cp-kpi-label">Total Customers</div>
+        <div class="cp-kpi-value">14,282</div>
+        <div class="cp-kpi-sub">Active Base</div>
+    </div>
+    
+    <div class="cp-kpi-card purple">
+        <span class="cp-kpi-icon">🏷️</span>
+        <div class="cp-kpi-label">Customer Segments</div>
+        <div class="cp-kpi-value">7</div>
+        <div class="cp-kpi-sub">RFM Analysis</div>
+    </div>
+    
+    <div class="cp-kpi-card red">
+        <span class="cp-kpi-icon">⚠️</span>
+        <div class="cp-kpi-label">Revenue at Risk</div>
+        <div class="cp-kpi-value">$602K</div>
+        <div class="cp-kpi-sub">At Risk Segment</div>
+    </div>
+    
+    <div class="cp-kpi-card amber">
+        <span class="cp-kpi-icon">👑</span>
+        <div class="cp-kpi-label">Champions</div>
+        <div class="cp-kpi-value">1,545</div>
+        <div class="cp-kpi-sub">Top Customers</div>
+    </div>
+</div>
+
+<!-- RFM VISUALIZATIONS -->
+<div class="cp-chart-grid">
+    <!-- Segment Distribution -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📊 Customer Segment Distribution</h3>
+                <p class="cp-chart-subtitle">RFM segmentation breakdown</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('segment_distribution')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/rfm/segment_distribution.png" 
+                     alt="Segment Distribution" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">📊</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Largest Segment</div>
+                    <div class="cp-insight-text">Loyal customers represent 42.7% of customer base</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- RFM Heatmap -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🔥 RFM Score Heatmap</h3>
+                <p class="cp-chart-subtitle">Customer behavior patterns</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('rfm_heatmap')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/rfm/rfm_heatmap.png" 
+                     alt="RFM Heatmap" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🔥</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Behavior Patterns</div>
+                    <div class="cp-insight-text">Heat map reveals customer patterns across RFM dimensions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Revenue Treemap -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">💰 Revenue by Segment</h3>
+                <p class="cp-chart-subtitle">Revenue contribution analysis</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('revenue_treemap')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/rfm/revenue_treemap.png" 
+                     alt="Revenue Treemap" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">💰</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Revenue Drivers</div>
+                    <div class="cp-insight-text">Champions and Loyal customers drive majority of revenue</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 3D Cluster Analysis -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🎯 3D Cluster Visualization</h3>
+                <p class="cp-chart-subtitle">K-means clustering analysis</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('3d_clusters')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/rfm/3d_cluster_scatter.png" 
+                     alt="3D Clusters" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Distinct Groups</div>
+                    <div class="cp-insight-text">K-means reveals 4 distinct customer behavior groups</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- SEGMENT DETAILS -->
+<div class="cp-chart-card" style="margin-top: 32px;">
+    <div class="cp-chart-header">
+        <div>
+            <h3 class="cp-chart-title">👥 Customer Segment Analysis</h3>
+            <p class="cp-chart-subtitle">Detailed breakdown of customer segments</p>
+        </div>
+    </div>
+    <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+        <!-- Champions -->
+        <div class="segment-card champions">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="segment-avatar" style="background: var(--amber);">👑</div>
+                    <div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--amber); margin-bottom: 4px;">Champions (10.8%)</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">1,545 customers • Avg: $4,572</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">High recency, frequency, and monetary value</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="segment-badge badge-vip">VIP Treatment</span>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Reward loyalty, exclusive offers</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Loyal Customers -->
+        <div class="segment-card loyal">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="segment-avatar" style="background: var(--blue);">💙</div>
+                    <div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--blue); margin-bottom: 4px;">Loyal Customers (42.7%)</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">6,099 customers • Avg: $3,364</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Regular purchasers with good value</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="segment-badge badge-maintain">Maintain</span>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Consistent engagement</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Potential Loyalists -->
+        <div class="segment-card potential">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="segment-avatar" style="background: var(--green);">🌱</div>
+                    <div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--green); margin-bottom: 4px;">Potential Loyalists (8.5%)</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">1,219 customers • Avg: $1,730</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Recent customers with growth potential</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="segment-badge badge-nurture">Nurture</span>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Targeted campaigns</div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- At Risk -->
+        <div class="segment-card at-risk">
+            <div style="display: flex; justify-content: space-between; align-items: start;">
+                <div style="display: flex; align-items: center; gap: 16px;">
+                    <div class="segment-avatar" style="background: var(--red);">⚠️</div>
+                    <div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--red); margin-bottom: 4px;">At Risk (2.7%)</div>
+                        <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 2px;">384 customers • Avg: $1,569</div>
+                        <div style="font-size: 13px; color: var(--text-secondary);">Valuable customers showing decline</div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <span class="segment-badge badge-urgent">Urgent</span>
+                    <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Win-back campaigns</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ACTION RECOMMENDATIONS -->
+<div class="cp-chart-grid" style="margin-top: 32px;">
+    <!-- Retention Strategy -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🛡️ Retention Strategy</h3>
+                <p class="cp-chart-subtitle">Protect valuable customers</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+            <div class="cp-insight-card insight-red">
+                <div class="cp-insight-icon" style="background: var(--red);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--red);">Focus on 384 At Risk customers ($602K revenue)</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">📧</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Implement win-back email campaigns</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">💸</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Offer personalized discounts</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🤝</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Improve customer service touchpoints</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Growth Strategy -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📈 Growth Strategy</h3>
+                <p class="cp-chart-subtitle">Expand customer value</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">🚀</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Convert 1,219 Potential Loyalists</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">🛒</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Cross-sell to existing Champions</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">📈</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Increase purchase frequency</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🏆</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Develop loyalty program tiers</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Engagement Strategy -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📢 Engagement Strategy</h3>
+                <p class="cp-chart-subtitle">Enhance customer relationships</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">📢</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Segment-specific marketing campaigns</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Personalized product recommendations</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">⭐</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Exclusive member benefits</div>
+                </div>
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">📊</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Regular engagement surveys</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced Customer Page Interactions
+function exportChart(chartType) {
+    // Simulate chart export
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.textContent = '⏳ Exporting...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.textContent = '✅ Exported!';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 2000);
+    }, 1500);
+    
+    console.log(`Exporting chart: ${chartType}`);
+}
+
+// Intersection Observer for animations
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.cp-chart-card, .cp-insight-card, .segment-card').forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Initialize animations
+document.addEventListener('DOMContentLoaded', () => {
+    setupScrollAnimations();
+    
+    // Add hover effects to chart images
+    document.querySelectorAll('.cp-chart-image').forEach(img => {
+        img.addEventListener('mouseenter', () => {
+            img.style.transform = 'scale(1.02)';
+        });
+        
+        img.addEventListener('mouseleave', () => {
+            img.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Add special effects to at-risk cards
+    const atRiskCards = document.querySelectorAll('.at-risk');
+    atRiskCards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.animationDuration = '1.5s';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.animationDuration = '3s';
+        });
+    });
+    
+    // Add floating animation to segment avatars
+    document.querySelectorAll('.segment-avatar').forEach(avatar => {
+        avatar.style.animationDelay = Math.random() * 2 + 's';
+    });
+});
+</script>
+{% endblock %}

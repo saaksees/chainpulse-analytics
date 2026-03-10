@@ -1,0 +1,180 @@
+{% extends 'base.html' %}
+
+{% block title %}Version History{% endblock %}
+
+{% block content %}
+<!-- ═══ PAGE HEADER ═══ -->
+<div class="cp-page-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:16px">
+        <div>
+            <div class="cp-badge">📚 Version Control</div>
+            <h1 class="cp-page-title">Dataset <span style="color:#38BDF8">Versions</span></h1>
+        </div>
+        <button onclick="resetToDefault()"
+                style="background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:8px;transition:all 0.3s"
+                onmouseover="this.style.borderColor='#38BDF8'"
+                onmouseout="this.style.borderColor='#334155'">
+            🏠 Reset to DataCo Default
+        </button>
+    </div>
+    <p class="cp-page-subtitle">Every uploaded dataset is saved permanently. Switch between any version instantly — no re-running needed.</p>
+</div>
+
+<!-- ═══ ACTIVE VERSION BANNER ═══ -->
+{% if active %}
+<div style="background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #10b981;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
+    <div style="display:flex;align-items:center;gap:16px">
+        <div style="background:#10b981;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">✅</div>
+        <div>
+            <div style="color:#10b981;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Currently Active Dataset</div>
+            <div style="color:#F1F5F9;font-size:18px;font-weight:700">{{ active.version_number }} — {{ active.filename }}</div>
+            <div style="color:#94A3B8;font-size:13px;margin-top:4px">Uploaded by {{ active.uploaded_by }} · {{ active.uploaded_at }}</div>
+        </div>
+    </div>
+    <div style="display:flex;gap:24px;flex-wrap:wrap">
+        <div style="text-align:center">
+            <div style="color:#10b981;font-size:20px;font-weight:700">{{ "{:,}".format(active.total_rows) }}</div>
+            <div style="color:#94A3B8;font-size:12px">Records</div>
+        </div>
+        <div style="text-align:center">
+            <div style="color:#10b981;font-size:20px;font-weight:700">${{ "%.1fM" | format(active.total_revenue/1000000) }}</div>
+            <div style="color:#94A3B8;font-size:12px">Revenue</div>
+        </div>
+        <div style="text-align:center">
+            <div style="color:#10b981;font-size:20px;font-weight:700">{{ active.late_rate }}%</div>
+            <div style="color:#94A3B8;font-size:12px">Late Rate</div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div style="background:#1E293B;border-radius:12px;padding:20px;margin-bottom:24px;color:#94A3B8;text-align:center">
+    No active version yet. Upload a dataset to get started.
+    <a href="/upload" style="color:#38BDF8;margin-left:8px">Upload Now →</a>
+</div>
+{% endif %}
+
+<!-- ═══ STATS ROW ═══ -->
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+    <div class="cp-card" style="text-align:center;padding:20px">
+        <div style="font-size:32px;font-weight:800;color:#38BDF8">{{ versions|length }}</div>
+        <div style="color:#94A3B8;font-size:13px;margin-top:4px">Total Versions</div>
+    </div>
+    <div class="cp-card" style="text-align:center;padding:20px">
+        <div style="font-size:32px;font-weight:800;color:#10b981">{{ versions|selectattr('is_active','equalto',1)|list|length }}</div>
+        <div style="color:#94A3B8;font-size:13px;margin-top:4px">Active Now</div>
+    </div>
+    <div class="cp-card" style="text-align:center;padding:20px">
+        <div style="font-size:32px;font-weight:800;color:#818CF8">{% if versions %}{{ versions[0].uploaded_at[:10] }}{% else %}—{% endif %}</div>
+        <div style="color:#94A3B8;font-size:13px;margin-top:4px">Last Upload</div>
+    </div>
+</div>
+
+<!-- ═══ VERSION CARDS ═══ -->
+{% if versions %}
+<div style="display:flex;flex-direction:column;gap:16px">
+    {% for v in versions %}
+    <div class="cp-card" style="border:1px solid{% if v.is_active %}#10b981{% else %}#1E293B{% endif %};transition:all 0.2s;position:relative" id="version-card-{{ v.id }}">
+        <!-- Active ribbon -->
+        {% if v.is_active %}
+        <div style="position:absolute;top:16px;right:16px">
+            <span style="background:#052e16;color:#10b981;border:1px solid #10b981;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">✅ ACTIVE</span>
+        </div>
+        {% endif %}
+        
+        <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
+            <!-- Version badge -->
+            <div style="background:#1E293B;border-radius:10px;padding:12px 16px;text-align:center;min-width:70px;flex-shrink:0">
+                <div style="color:#38BDF8;font-size:22px;font-weight:800">{{ v.version_number }}</div>
+                <div style="color:#475569;font-size:11px;margin-top:2px">VERSION</div>
+            </div>
+            
+            <!-- Version details -->
+            <div style="flex:1;min-width:200px">
+                <div style="color:#F1F5F9;font-size:16px;font-weight:600;margin-bottom:6px">{{ v.filename }}</div>
+                <div style="color:#94A3B8;font-size:13px;margin-bottom:12px">
+                    Uploaded by <span style="color:#38BDF8">{{ v.uploaded_by }}</span> · {{ v.uploaded_at }}
+                </div>
+                
+                <!-- Stats pills -->
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">📦 {{ "{:,}".format(v.total_rows) }} rows</span>
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">💰 ${{ "%.1fM"|format(v.total_revenue/1000000 if v.total_revenue > 0 else 0) }}</span>
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">⏰ {{ v.late_rate }}% late</span>
+                    {% if v.date_range %}
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">📅 {{ v.date_range }}</span>
+                    {% endif %}
+                </div>
+            </div>
+            
+            <!-- Action buttons -->
+            <div style="display:flex;flex-direction:column;gap:8px;min-width:180px">
+                {% if v.is_active %}
+                <button disabled style="background:#052e16;color:#10b981;border:1px solid #10b981;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:not-allowed;width:100%">
+                    ✅ Currently Active
+                </button>
+                {% else %}
+                <button onclick="switchVersion({{ v.id }}, '{{ v.version_number }}', '{{ v.filename }}')" 
+                        style="background:#38BDF8;color:#0A0E1A;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:opacity 0.2s"
+                        onmouseover="this.style.opacity='0.85'"
+                        onmouseout="this.style.opacity='1'"
+                        id="switch-btn-{{ v.id }}">
+                    🔄 Switch to This
+                </button>
+                {% if active %}
+                <button onclick="compareVersion({{ v.id }}, '{{ v.version_number }}', {{ active.id }}, '{{ active.version_number }}')"
+                        style="background:transparent;color:#818CF8;border:1px solid #818CF8;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all 0.2s"
+                        onmouseover="this.style.background='#818CF820'"
+                        onmouseout="this.style.background='transparent'">
+                    📊 Compare with Active
+                </button>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<!-- Empty state -->
+<div style="text-align:center;padding:80px 40px;background:#111827;border-radius:16px;border:1px dashed #1E293B">
+    <div style="font-size:64px;margin-bottom:16px">📭</div>
+    <div style="color:#F1F5F9;font-size:20px;font-weight:600;margin-bottom:8px">No versions yet</div>
+    <div style="color:#94A3B8;font-size:15px;margin-bottom:24px">Upload your first dataset to start tracking version history</div>
+    <a href="/upload" style="background:#38BDF8;color:#0A0E1A;padding:12px 28px;border-radius:8px;font-weight:700;text-decoration:none;font-size:15px">📁 Upload Dataset</a>
+</div>
+{% endif %}
+
+<!-- ═══ COMPARE MODAL ═══ -->
+<div id="compare-modal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.85);z-index:1000;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#111827;border:1px solid #38BDF8;border-radius:16px;padding:32px;width:700px;max-width:95vw;max-height:90vh;overflow-y:auto;position:relative">
+        <button onclick="closeCompare()" style="position:absolute;top:16px;right:16px;background:#1E293B;border:none;color:#94A3B8;width:32px;height:32px;border-radius:50%;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center">×</button>
+        
+        <div style="color:#38BDF8;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📊 Version Comparison</div>
+        <h2 style="color:#F1F5F9;font-size:20px;margin-bottom:24px" id="compare-title">Comparing Versions</h2>
+        
+        <!-- Column headers -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px">
+            <div style="color:#94A3B8;font-size:12px;font-weight:600;text-transform:uppercase">Metric</div>
+            <div style="color:#10b981;font-size:12px;font-weight:600;text-transform:uppercase;text-align:center" id="compare-v1-header">Active</div>
+            <div style="color:#38BDF8;font-size:12px;font-weight:600;text-transform:uppercase;text-align:center" id="compare-v2-header">Selected</div>
+        </div>
+        
+        <!-- Comparison rows -->
+        <div id="compare-rows" style="display:flex;flex-direction:column;gap:8px">
+            <!-- Filled by JS -->
+            <div style="text-align:center;color:#94A3B8;padding:40px">Loading comparison...</div>
+        </div>
+        
+        <div style="margin-top:24px;padding-top:16px;border-top:1px solid #1E293B;text-align:center">
+            <button onclick="closeCompare()" style="background:#1E293B;color:#F1F5F9;border:none;border-radius:8px;padding:10px 28px;font-size:14px;cursor:pointer">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ TOAST ═══ -->
+<div id="toast" style="display:none;position:fixed;bottom:24px;right:24px;padding:14px 20px;border-radius:10px;font-size:14px;font-weight:600;z-index:9999;min-width:250px;box-shadow:0 8px 32px rgba(0,0,0,0.4)"></div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/versions.js') }}"></script>
+{% endblock %}

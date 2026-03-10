@@ -1,0 +1,21 @@
+{
+    "thresholds": {
+        "late_rate": 60.0,
+        "revenue_at_risk": 3000000,
+        "high_risk_orders": 15000
+    },
+    "email": {
+        "sender": "your.email@gmail.com",
+        "password": "your_app_password",
+        "recipient": "your.email@gmail.com",
+        "smtp_server": "smtp.gmail.com",
+        "smtp_port": 587,
+        "enabled": false
+    },
+    "scheduler": {
+        "enabled": true,
+        "run_hour": 0,
+        "run_minute": 0,
+        "timezone": "Asia/Kolkata"
+    }
+}

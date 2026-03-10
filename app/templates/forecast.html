@@ -1,0 +1,652 @@
+{% extends 'base.html' %}
+
+{% block title %}Demand Forecast{% endblock %}
+
+{% block content %}
+<style>
+/* Enhanced Forecast Page Styling */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes forecastGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(16, 185, 129, 0.6); }
+}
+
+.cp-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.cp-chart-grid.full {
+    grid-template-columns: 1fr;
+}
+
+.cp-chart-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    position: relative;
+    backdrop-filter: blur(10px);
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(56, 189, 248, 0.05));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.cp-chart-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.cp-chart-card:hover::before {
+    opacity: 1;
+}
+
+.cp-chart-card.full {
+    grid-column: 1 / -1;
+}
+
+.cp-chart-header {
+    padding: 24px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(16, 185, 129, 0.1);
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), transparent);
+}
+
+.cp-chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #F1F5F9, #10B981);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.cp-chart-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.cp-chart-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.cp-chart-image:hover {
+    transform: scale(1.02);
+}
+
+.cp-insight-card {
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-insight-card:hover {
+    transform: translateX(8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.cp-insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+.cp-insight-content {
+    flex: 1;
+}
+
+.cp-insight-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.cp-insight-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Color-coded insight cards */
+.insight-blue {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05));
+    border-left: 4px solid var(--blue);
+}
+
+.insight-green {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border-left: 4px solid var(--green);
+}
+
+.insight-purple {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+    border-left: 4px solid var(--purple);
+}
+
+.insight-amber {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border-left: 4px solid var(--amber);
+}
+
+.insight-red {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border-left: 4px solid var(--red);
+}
+
+/* Enhanced KPI Cards */
+.cp-kpi-card {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-kpi-card:nth-child(1) { animation-delay: 0.1s; }
+.cp-kpi-card:nth-child(2) { animation-delay: 0.2s; }
+.cp-kpi-card:nth-child(3) { animation-delay: 0.3s; }
+.cp-kpi-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Chart Cards Animation Delays */
+.cp-chart-card:nth-child(1) { animation-delay: 0.2s; }
+.cp-chart-card:nth-child(2) { animation-delay: 0.4s; }
+.cp-chart-card:nth-child(3) { animation-delay: 0.6s; }
+.cp-chart-card:nth-child(4) { animation-delay: 0.8s; }
+
+/* Enhanced Export Buttons */
+.cp-export-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(56, 189, 248, 0.1));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    color: var(--green);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-export-btn:hover {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(56, 189, 248, 0.2));
+    border-color: var(--green);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+/* Forecast Table Enhancements */
+.forecast-table {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    backdrop-filter: blur(10px);
+}
+
+.forecast-table table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.forecast-table thead {
+    background: linear-gradient(135deg, var(--bg-primary), rgba(16, 185, 129, 0.05));
+}
+
+.forecast-table th {
+    text-align: left;
+    padding: 14px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    border-bottom: 1px solid var(--border);
+}
+
+.forecast-table tr {
+    transition: all 0.3s ease;
+}
+
+.forecast-table tr:hover {
+    background: rgba(16, 185, 129, 0.05);
+    transform: translateX(4px);
+}
+
+.forecast-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(30,41,59,0.5);
+    color: var(--text-primary);
+}
+
+.trend-badge {
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.trend-badge:hover {
+    transform: scale(1.05);
+}
+
+.trend-increasing {
+    background: var(--green-glow);
+    color: var(--green);
+}
+
+.trend-decreasing {
+    background: var(--amber-glow);
+    color: var(--amber);
+}
+
+.confidence-high {
+    background: var(--blue-glow);
+    color: var(--blue);
+}
+</style>
+
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">📈 Demand Forecasting</div>
+    <h1 class="cp-page-title">Demand <span>Forecast</span></h1>
+    <p class="cp-page-subtitle">90-day sales predictions using Facebook Prophet for top 5 product categories</p>
+    <div style="margin-top:16px">
+        <a href="/api/report/forecast" style="display:inline-flex;align-items:center;gap:8px;background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='#38BDF8';this.style.color='#38BDF8'" onmouseout="this.style.borderColor='#334155';this.style.color='#F1F5F9'">📄 Download Report</a>
+    </div>
+</div>
+
+<!-- FORECAST OVERVIEW STATS -->
+<div class="cp-kpi-grid">
+    <div class="cp-kpi-card blue">
+        <span class="cp-kpi-icon">📊</span>
+        <div class="cp-kpi-label">Categories Forecasted</div>
+        <div class="cp-kpi-value">5</div>
+        <div class="cp-kpi-sub">Top Performers</div>
+    </div>
+    
+    <div class="cp-kpi-card green">
+        <span class="cp-kpi-icon">📅</span>
+        <div class="cp-kpi-label">Forecast Days</div>
+        <div class="cp-kpi-value">90</div>
+        <div class="cp-kpi-sub">Future Outlook</div>
+    </div>
+    
+    <div class="cp-kpi-card purple">
+        <span class="cp-kpi-icon">💰</span>
+        <div class="cp-kpi-label">Total Forecast</div>
+        <div class="cp-kpi-value">$2.0M</div>
+        <div class="cp-kpi-sub">Revenue Projection</div>
+    </div>
+    
+    <div class="cp-kpi-card amber">
+        <span class="cp-kpi-icon">🤖</span>
+        <div class="cp-kpi-label">ML Algorithm</div>
+        <div class="cp-kpi-value">Prophet</div>
+        <div class="cp-kpi-sub">Facebook Prophet</div>
+    </div>
+</div>
+
+<!-- FORECAST VISUALIZATIONS -->
+<div class="cp-chart-grid">
+    <!-- 90-Day Forecast Overview -->
+    <div class="cp-chart-card full">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📈 90-Day Demand Forecast - All Categories</h3>
+                <p class="cp-chart-subtitle">Comprehensive forecast with seasonal patterns</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="cp-export-btn" onclick="fullScreenChart('90day_forecast')">🔍 Full Screen</button>
+                <button class="cp-export-btn" onclick="exportChart('90day_forecast')">📥 Export</button>
+            </div>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/forecasting/90day_forecast.png" 
+                     alt="90-Day Forecast" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">📊</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Comprehensive Forecast</div>
+                    <div class="cp-insight-text">90-day predictions showing seasonal patterns and growth trends</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actual vs Predicted -->
+    <div class="cp-chart-card full">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🎯 Model Validation - Actual vs Predicted</h3>
+                <p class="cp-chart-subtitle">Prophet model accuracy assessment</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('actual_vs_predicted')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/forecasting/actual_vs_predicted.png" 
+                     alt="Actual vs Predicted" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">✅</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">High Accuracy</div>
+                    <div class="cp-insight-text">Predictions closely match actual sales patterns</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CATEGORY FORECASTS TABLE -->
+<div class="cp-chart-card" style="margin-top: 32px;">
+    <div class="cp-chart-header">
+        <div>
+            <h3 class="cp-chart-title">📋 Category Forecast Summary</h3>
+            <p class="cp-chart-subtitle">90-day projections by product category</p>
+        </div>
+    </div>
+    <div style="padding: 24px;">
+        <div class="forecast-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th>90-Day Forecast</th>
+                        <th>Daily Average</th>
+                        <th>Trend</th>
+                        <th>Confidence</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 500;">Fishing</td>
+                        <td style="color: var(--green); font-weight: 600;">$637K</td>
+                        <td>$7,078</td>
+                        <td>
+                            <span class="trend-badge trend-increasing">Increasing</span>
+                        </td>
+                        <td>
+                            <span class="trend-badge confidence-high">High</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 500;">Cleats</td>
+                        <td style="color: var(--green); font-weight: 600;">$391K</td>
+                        <td>$4,344</td>
+                        <td>
+                            <span class="trend-badge trend-increasing">Increasing</span>
+                        </td>
+                        <td>
+                            <span class="trend-badge confidence-high">High</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 500;">Camping & Hiking</td>
+                        <td style="color: var(--green); font-weight: 600;">$373K</td>
+                        <td>$4,144</td>
+                        <td>
+                            <span class="trend-badge trend-increasing">Increasing</span>
+                        </td>
+                        <td>
+                            <span class="trend-badge confidence-high">High</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 500;">Cardio Equipment</td>
+                        <td style="color: var(--amber); font-weight: 600;">$336K</td>
+                        <td>$3,733</td>
+                        <td>
+                            <span class="trend-badge trend-decreasing">Decreasing</span>
+                        </td>
+                        <td>
+                            <span class="trend-badge confidence-high">High</span>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 500;">Women's Apparel</td>
+                        <td style="color: var(--amber); font-weight: 600;">$274K</td>
+                        <td>$3,044</td>
+                        <td>
+                            <span class="trend-badge trend-decreasing">Decreasing</span>
+                        </td>
+                        <td>
+                            <span class="trend-badge confidence-high">High</span>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- BUSINESS INSIGHTS -->
+<div class="cp-chart-grid" style="margin-top: 32px;">
+    <!-- Growth Categories -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📈 Growth Categories</h3>
+                <p class="cp-chart-subtitle">Increasing demand trends</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">🎣</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Fishing - $637K</div>
+                    <div class="cp-insight-text">Strongest growth trajectory, increase inventory by 20%</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">👟</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Cleats - $391K</div>
+                    <div class="cp-insight-text">Consistent demand, maintain stock levels</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">🏕️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Camping & Hiking - $373K</div>
+                    <div class="cp-insight-text">Seasonal growth expected, prepare for peak</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Optimization Opportunities -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">⚠️ Optimization Opportunities</h3>
+                <p class="cp-chart-subtitle">Declining trends requiring attention</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">🏃</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Cardio Equipment - $336K</div>
+                    <div class="cp-insight-text">Declining trend, consider promotions</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">👗</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Women's Apparel - $274K</div>
+                    <div class="cp-insight-text">Reduce inventory, focus on bestsellers</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">💡</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Strategic Recommendation</div>
+                    <div class="cp-insight-text">Reallocate resources from declining to growth categories</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced Forecast Page Interactions
+function exportChart(chartType) {
+    // Simulate chart export
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.textContent = '⏳ Exporting...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.textContent = '✅ Exported!';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 2000);
+    }, 1500);
+    
+    console.log(`Exporting chart: ${chartType}`);
+}
+
+function fullScreenChart(chartType) {
+    // Simulate full screen view
+    console.log(`Opening full screen view for: ${chartType}`);
+    
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(10px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="position: relative; max-width: 90%; max-height: 90%;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+            <img src="/visuals/forecasting/90day_forecast.png" style="width: 100%; height: auto; border-radius: 12px;">
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Intersection Observer for animations
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.cp-chart-card, .cp-insight-card').forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Initialize animations
+document.addEventListener('DOMContentLoaded', () => {
+    setupScrollAnimations();
+    
+    // Add hover effects to chart images
+    document.querySelectorAll('.cp-chart-image').forEach(img => {
+        img.addEventListener('mouseenter', () => {
+            img.style.transform = 'scale(1.02)';
+        });
+        
+        img.addEventListener('mouseleave', () => {
+            img.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Add hover effects to table rows
+    document.querySelectorAll('.forecast-table tr').forEach(row => {
+        row.addEventListener('mouseenter', () => {
+            row.style.background = 'rgba(16, 185, 129, 0.05)';
+            row.style.transform = 'translateX(4px)';
+        });
+        
+        row.addEventListener('mouseleave', () => {
+            row.style.background = 'transparent';
+            row.style.transform = 'translateX(0)';
+        });
+    });
+});
+</script>
+{% endblock %}

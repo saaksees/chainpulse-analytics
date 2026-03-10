@@ -1,0 +1,744 @@
+{% extends 'base.html' %}
+
+{% block title %}NLP Insights{% endblock %}
+
+{% block content %}
+<style>
+/* Enhanced NLP Page Styling */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes nlpGlow {
+    0%, 100% { box-shadow: 0 0 20px rgba(124, 58, 237, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(124, 58, 237, 0.6); }
+}
+
+.cp-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.cp-chart-grid.full {
+    grid-template-columns: 1fr;
+}
+
+.cp-chart-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    position: relative;
+    backdrop-filter: blur(10px);
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), rgba(16, 185, 129, 0.05));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.cp-chart-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(124, 58, 237, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.cp-chart-card:hover::before {
+    opacity: 1;
+}
+
+.cp-chart-card.full {
+    grid-column: 1 / -1;
+}
+
+.cp-chart-header {
+    padding: 24px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.05), transparent);
+}
+
+.cp-chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #F1F5F9, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.cp-chart-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.cp-chart-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.cp-chart-image:hover {
+    transform: scale(1.02);
+}
+
+.cp-insight-card {
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-insight-card:hover {
+    transform: translateX(8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.cp-insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+.cp-insight-content {
+    flex: 1;
+}
+
+.cp-insight-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.cp-insight-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Color-coded insight cards */
+.insight-blue {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05));
+    border-left: 4px solid var(--blue);
+}
+
+.insight-green {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border-left: 4px solid var(--green);
+}
+
+.insight-purple {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+    border-left: 4px solid var(--purple);
+}
+
+.insight-amber {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border-left: 4px solid var(--amber);
+}
+
+.insight-red {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border-left: 4px solid var(--red);
+}
+
+/* Enhanced KPI Cards */
+.cp-kpi-card {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-kpi-card:nth-child(1) { animation-delay: 0.1s; }
+.cp-kpi-card:nth-child(2) { animation-delay: 0.2s; }
+.cp-kpi-card:nth-child(3) { animation-delay: 0.3s; }
+.cp-kpi-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Chart Cards Animation Delays */
+.cp-chart-card:nth-child(1) { animation-delay: 0.2s; }
+.cp-chart-card:nth-child(2) { animation-delay: 0.4s; }
+.cp-chart-card:nth-child(3) { animation-delay: 0.6s; }
+.cp-chart-card:nth-child(4) { animation-delay: 0.8s; }
+
+/* Enhanced Export Buttons */
+.cp-export-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(16, 185, 129, 0.1));
+    border: 1px solid rgba(124, 58, 237, 0.3);
+    color: var(--purple);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-export-btn:hover {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(16, 185, 129, 0.2));
+    border-color: var(--purple);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(124, 58, 237, 0.3);
+}
+
+/* NLP Pipeline Steps */
+.nlp-step {
+    text-align: center;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.nlp-step:hover {
+    transform: translateY(-4px);
+}
+
+.nlp-step-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    margin: 0 auto 12px;
+    animation: nlpGlow 3s ease-in-out infinite;
+}
+
+.nlp-step:nth-child(1) .nlp-step-icon { animation-delay: 0s; }
+.nlp-step:nth-child(2) .nlp-step-icon { animation-delay: 0.5s; }
+.nlp-step:nth-child(3) .nlp-step-icon { animation-delay: 1s; }
+.nlp-step:nth-child(4) .nlp-step-icon { animation-delay: 1.5s; }
+.nlp-step:nth-child(5) .nlp-step-icon { animation-delay: 2s; }
+
+.nlp-step-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.nlp-step-desc {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+</style>
+
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">🔍 Natural Language Processing</div>
+    <h1 class="cp-page-title">NLP <span>Insights</span></h1>
+    <p class="cp-page-subtitle">Natural Language Processing insights from product descriptions and categories</p>
+    <div style="margin-top:16px">
+        <a href="/api/report/nlp" style="display:inline-flex;align-items:center;gap:8px;background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='#38BDF8';this.style.color='#38BDF8'" onmouseout="this.style.borderColor='#334155';this.style.color='#F1F5F9'">📄 Download Report</a>
+    </div>
+</div>
+
+<!-- NLP OVERVIEW STATS -->
+<div class="cp-kpi-grid">
+    <div class="cp-kpi-card blue">
+        <span class="cp-kpi-icon">📦</span>
+        <div class="cp-kpi-label">Products Analyzed</div>
+        <div class="cp-kpi-value">118</div>
+        <div class="cp-kpi-sub">Complete Catalog</div>
+    </div>
+    
+    <div class="cp-kpi-card purple">
+        <span class="cp-kpi-icon">🏷️</span>
+        <div class="cp-kpi-label">Categories</div>
+        <div class="cp-kpi-value">50</div>
+        <div class="cp-kpi-sub">Diverse Range</div>
+    </div>
+    
+    <div class="cp-kpi-card green">
+        <span class="cp-kpi-icon">🧠</span>
+        <div class="cp-kpi-label">Analysis Types</div>
+        <div class="cp-kpi-value">9</div>
+        <div class="cp-kpi-sub">Comprehensive</div>
+    </div>
+    
+    <div class="cp-kpi-card amber">
+        <span class="cp-kpi-icon">⚙️</span>
+        <div class="cp-kpi-label">NLP Engine</div>
+        <div class="cp-kpi-value">NLTK</div>
+        <div class="cp-kpi-sub">Advanced Processing</div>
+    </div>
+</div>
+
+<!-- NLP VISUALIZATIONS -->
+<div class="cp-chart-grid">
+    <!-- Word Cloud -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">☁️ Product Word Cloud</h3>
+                <p class="cp-chart-subtitle">Most frequent terms visualization</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('wordcloud')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/wordcloud_products.png" 
+                     alt="Product Word Cloud" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">☁️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Dominant Terms</div>
+                    <div class="cp-insight-text">"Men", "Nike", "Perfect" dominate product descriptions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Top Words Frequency -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📊 Top Words Frequency</h3>
+                <p class="cp-chart-subtitle">Most common terms analysis</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('word_frequency')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/top_words_frequency.png" 
+                     alt="Word Frequency" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">📊</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Brand Focus</div>
+                    <div class="cp-insight-text">Brand names and product attributes are most common</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Word Clouds -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🎨 Category-Specific Word Clouds</h3>
+                <p class="cp-chart-subtitle">Vocabulary by product category</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('category_wordclouds')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/wordcloud_by_category.png" 
+                     alt="Category Word Clouds" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">🎨</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Category Patterns</div>
+                    <div class="cp-insight-text">Each category shows distinct vocabulary and brand preferences</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sentiment Analysis -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">😊 Sentiment Heatmap</h3>
+                <p class="cp-chart-subtitle">Emotional tone analysis</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('sentiment')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/sentiment_heatmap.png" 
+                     alt="Sentiment Heatmap" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">😊</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Positive Tone</div>
+                    <div class="cp-insight-text">Neutral to positive language across categories</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ADVANCED NLP ANALYSIS -->
+<div class="cp-chart-grid" style="margin-top: 32px;">
+    <!-- N-gram Analysis -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🔗 Bigram Analysis</h3>
+                <p class="cp-chart-subtitle">Common word pairs</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('bigrams')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/bigrams.png" 
+                     alt="Bigrams" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">🔗</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Word Pairs</div>
+                    <div class="cp-insight-text">Common pairs reveal product naming patterns</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🔀 Trigram Analysis</h3>
+                <p class="cp-chart-subtitle">Three-word phrases</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('trigrams')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/trigrams.png" 
+                     alt="Trigrams" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🔀</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Complete Phrases</div>
+                    <div class="cp-insight-text">Three-word phrases show product descriptors</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Topic Modeling -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🎯 LDA Topic Modeling</h3>
+                <p class="cp-chart-subtitle">Hidden thematic structures</p>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="cp-export-btn" onclick="fullScreenChart('lda_topics')">🔍 Full Screen</button>
+                <button class="cp-export-btn" onclick="exportChart('lda_topics')">📥 Export</button>
+            </div>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/lda_topics.png" 
+                     alt="LDA Topics" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Hidden Topics</div>
+                    <div class="cp-insight-text">LDA reveals thematic structures in descriptions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Similarity -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🌐 Category Similarity Matrix</h3>
+                <p class="cp-chart-subtitle">Vocabulary similarity analysis</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('category_similarity')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/nlp/category_similarity.png" 
+                     alt="Category Similarity" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">🌐</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Similarity Scores</div>
+                    <div class="cp-insight-text">Categories sharing similar vocabulary patterns</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- NLP INSIGHTS SUMMARY -->
+<div class="cp-chart-grid" style="margin-top: 32px;">
+    <!-- Key Findings -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">💡 Key NLP Findings</h3>
+                <p class="cp-chart-subtitle">Important discoveries</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">🏷️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Brand Dominance</div>
+                    <div class="cp-insight-text">Nike appears in 57,309 product descriptions</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">⭐</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Quality Focus</div>
+                    <div class="cp-insight-text">"Perfect" is the 3rd most common word (49,030 occurrences)</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">👨</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Gender Targeting</div>
+                    <div class="cp-insight-text">"Men" dominates with 77,602 mentions vs "Women" 18,053</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Category Clusters</div>
+                    <div class="cp-insight-text">Sports equipment shows high vocabulary similarity</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Business Applications -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🚀 Business Applications</h3>
+                <p class="cp-chart-subtitle">Actionable insights</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🔍</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Search Optimization</div>
+                    <div class="cp-insight-text">Use top keywords for SEO and product discovery</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">📝</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Content Strategy</div>
+                    <div class="cp-insight-text">Leverage brand associations and quality messaging</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">🤖</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">Recommendation Engine</div>
+                    <div class="cp-insight-text">Use similarity scores for cross-selling</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">📊</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Market Positioning</div>
+                    <div class="cp-insight-text">Identify gaps in product vocabulary and positioning</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- TECHNICAL DETAILS -->
+<div class="cp-chart-card" style="margin-top: 32px;">
+    <div class="cp-chart-header">
+        <div>
+            <h3 class="cp-chart-title">🔧 NLP Processing Pipeline</h3>
+            <p class="cp-chart-subtitle">Technical implementation details</p>
+        </div>
+    </div>
+    <div style="padding: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <div class="nlp-step">
+                <div class="nlp-step-icon" style="background: var(--blue);">🧹</div>
+                <div class="nlp-step-title">Text Cleaning</div>
+                <div class="nlp-step-desc">Preprocessing & normalization</div>
+            </div>
+            <div class="nlp-step">
+                <div class="nlp-step-icon" style="background: var(--purple);">✂️</div>
+                <div class="nlp-step-title">Tokenization</div>
+                <div class="nlp-step-desc">Word & sentence splitting</div>
+            </div>
+            <div class="nlp-step">
+                <div class="nlp-step-icon" style="background: var(--green);">🚫</div>
+                <div class="nlp-step-title">Stop Words</div>
+                <div class="nlp-step-desc">Noise removal</div>
+            </div>
+            <div class="nlp-step">
+                <div class="nlp-step-icon" style="background: var(--amber);">📊</div>
+                <div class="nlp-step-title">TF-IDF</div>
+                <div class="nlp-step-desc">Feature extraction</div>
+            </div>
+            <div class="nlp-step">
+                <div class="nlp-step-icon" style="background: var(--red);">🧠</div>
+                <div class="nlp-step-title">LDA</div>
+                <div class="nlp-step-desc">Topic modeling</div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Enhanced NLP Page Interactions
+function exportChart(chartType) {
+    // Simulate chart export
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.textContent = '⏳ Exporting...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.textContent = '✅ Exported!';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 2000);
+    }, 1500);
+    
+    console.log(`Exporting chart: ${chartType}`);
+}
+
+function fullScreenChart(chartType) {
+    // Simulate full screen view
+    console.log(`Opening full screen view for: ${chartType}`);
+    
+    // Create modal overlay
+    const modal = document.createElement('div');
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 10000;
+        backdrop-filter: blur(10px);
+    `;
+    
+    modal.innerHTML = `
+        <div style="position: relative; max-width: 90%; max-height: 90%;">
+            <button onclick="this.parentElement.parentElement.remove()" 
+                    style="position: absolute; top: -40px; right: 0; background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+            <img src="/visuals/nlp/lda_topics.png" style="width: 100%; height: auto; border-radius: 12px;">
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Intersection Observer for animations
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.cp-chart-card, .cp-insight-card, .nlp-step').forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Initialize animations
+document.addEventListener('DOMContentLoaded', () => {
+    setupScrollAnimations();
+    
+    // Add hover effects to chart images
+    document.querySelectorAll('.cp-chart-image').forEach(img => {
+        img.addEventListener('mouseenter', () => {
+            img.style.transform = 'scale(1.02)';
+        });
+        
+        img.addEventListener('mouseleave', () => {
+            img.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Add staggered animation delays to NLP steps
+    document.querySelectorAll('.nlp-step').forEach((step, index) => {
+        step.style.animationDelay = (index * 0.2) + 's';
+    });
+    
+    // Add glow effect to NLP step icons
+    document.querySelectorAll('.nlp-step-icon').forEach(icon => {
+        icon.addEventListener('mouseenter', () => {
+            icon.style.animationDuration = '1s';
+        });
+        
+        icon.addEventListener('mouseleave', () => {
+            icon.style.animationDuration = '3s';
+        });
+    });
+});
+</script>
+{% endblock %}

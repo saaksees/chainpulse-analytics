@@ -1,0 +1,623 @@
+{% extends 'base.html' %}
+
+{% block title %}User Management - ChainPulse{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --bg-primary: #0A0E1A;
+        --bg-card: #111827;
+        --border: #1E293B;
+        --accent: #38BDF8;
+        --text: #F1F5F9;
+        --muted: #94A3B8;
+        --red: #EF4444;
+        --green: #10B981;
+    }
+
+    .admin-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+    }
+
+    .admin-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--red);
+        border-radius: 16px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .admin-title {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--text);
+        margin-bottom: 2px;
+    }
+
+    .admin-subtitle {
+        font-size: 14px;
+        color: var(--muted);
+    }
+
+    .btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 6px;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0EA5E9;
+        transform: translateY(-1px);
+    }
+
+    .btn-danger {
+        background: var(--red);
+        color: white;
+        padding: 6px 10px;
+        font-size: 11px;
+    }
+
+    .btn-danger:hover {
+        background: #DC2626;
+    }
+
+    .stats-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 12px;
+        margin-bottom: 20px;
+    }
+
+    .stat-card {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+    }
+
+    .stat-number {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--accent);
+        margin-bottom: 4px;
+    }
+
+    .stat-label {
+        font-size: 11px;
+        color: var(--muted);
+        text-transform: uppercase;
+        font-weight: 600;
+    }
+
+    .users-table {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    .table th {
+        background: var(--bg-primary);
+        color: var(--text);
+        font-weight: 600;
+        font-size: 10px;
+        text-transform: uppercase;
+        padding: 10px 12px;
+        text-align: left;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .table td {
+        padding: 10px 12px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text);
+        font-size: 12px;
+    }
+
+    .table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .user-cell {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7C3AED);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .user-info {
+        flex: 1;
+    }
+
+    .user-name {
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 1px;
+        font-size: 12px;
+    }
+
+    .user-username {
+        font-size: 10px;
+        color: var(--muted);
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .role-admin { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
+    .role-analyst { background: rgba(56, 189, 248, 0.2); color: #38BDF8; }
+    .role-viewer { background: rgba(71, 85, 105, 0.2); color: #475569; }
+
+    .actions-cell {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .dropdown {
+        position: relative;
+        display: inline-block;
+    }
+
+    .dropdown-toggle {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 6px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        cursor: pointer;
+    }
+
+    .dropdown-menu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        min-width: 100px;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 8px 20px -5px rgba(0, 0, 0, 0.3);
+    }
+
+    .dropdown-menu.show {
+        display: block;
+    }
+
+    .dropdown-item {
+        display: block;
+        width: 100%;
+        padding: 6px 10px;
+        background: none;
+        border: none;
+        color: var(--text);
+        font-size: 10px;
+        text-align: left;
+        cursor: pointer;
+        transition: background 0.2s ease;
+    }
+
+    .dropdown-item:hover {
+        background: var(--bg-primary);
+    }
+
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 2000;
+    }
+
+    .modal.show {
+        display: flex;
+    }
+
+    .modal-content {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        width: 100%;
+        max-width: 400px;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-title {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    .form-group {
+        margin-bottom: 14px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 12px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 6px;
+    }
+
+    .form-input, .form-select {
+        width: 100%;
+        padding: 8px 12px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        font-size: 12px;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-input:focus, .form-select:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .role-description {
+        font-size: 10px;
+        color: var(--muted);
+        margin-top: 6px;
+        padding: 6px 8px;
+        background: var(--bg-primary);
+        border-radius: 4px;
+    }
+
+    .modal-actions {
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+        margin-top: 16px;
+    }
+
+    .btn-secondary {
+        background: var(--bg-primary);
+        color: var(--text);
+        border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+        background: var(--border);
+    }
+
+    .password-generator {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 6px;
+    }
+
+    .generate-btn {
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        cursor: pointer;
+    }
+
+    .generate-btn:hover {
+        background: var(--border);
+    }
+</style>
+
+<!-- Header -->
+<div class="admin-header">
+    <div>
+        <div class="admin-badge">👑 Admin Panel</div>
+        <h1 class="admin-title">User Management</h1>
+        <p class="admin-subtitle">Create and manage platform users</p>
+    </div>
+    <button class="btn btn-primary" onclick="openCreateModal()">+ Create User</button>
+</div>
+
+<!-- Stats Row -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-number">{{ users|length }}</div>
+        <div class="stat-label">Total Users</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ users|selectattr('role', 'equalto', 'admin')|list|length }}</div>
+        <div class="stat-label">Admins</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number">{{ users|selectattr('role', 'equalto', 'analyst')|list|length }}</div>
+        <div class="stat-label">Analysts</div>
+    </div>
+</div>
+
+<!-- Users Table -->
+<div class="users-table">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Role</th>
+                <th>Email</th>
+                <th>Created</th>
+                <th>Last Login</th>
+                <th>Uploads</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+            <tr>
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar">{{ user.initials }}</div>
+                        <div class="user-info">
+                            <div class="user-name">{{ user.full_name }}</div>
+                            <div class="user-username">@{{ user.username }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>
+                    <span class="role-badge role-{{ user.role }}">{{ user.role }}</span>
+                </td>
+                <td>{{ user.email }}</td>
+                <td>{{ user.created_at }}</td>
+                <td>{{ user.last_login }}</td>
+                <td>{{ user.uploads_count }}</td>
+                <td>
+                    <div class="actions-cell">
+                        <div class="dropdown">
+                            <button class="dropdown-toggle" onclick="toggleDropdown(this)">
+                                Change Role ▼
+                            </button>
+                            <div class="dropdown-menu">
+                                <button class="dropdown-item" onclick="changeRole('{{ user.id }}', 'admin')">👑 Admin</button>
+                                <button class="dropdown-item" onclick="changeRole('{{ user.id }}', 'analyst')">📊 Analyst</button>
+                                <button class="dropdown-item" onclick="changeRole('{{ user.id }}', 'viewer')">👁️ Viewer</button>
+                            </div>
+                        </div>
+                        {% if user.id != current_user.id %}
+                        <button class="btn btn-danger" onclick="deleteUser('{{ user.id }}', '{{ user.username }}')">🗑️</button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<!-- Create User Modal -->
+<div class="modal" id="createModal">
+    <div class="modal-content">
+        <div class="modal-title">➕ Create New User</div>
+        <form id="createUserForm">
+            <div class="form-group">
+                <label class="form-label" for="fullName">Full Name</label>
+                <input type="text" id="fullName" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <input type="text" id="username" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="email">Email</label>
+                <input type="email" id="email" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <input type="password" id="password" class="form-input" required>
+                <div class="password-generator">
+                    <button type="button" class="generate-btn" onclick="generatePassword()">🔄 Generate</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="confirmPassword">Confirm Password</label>
+                <input type="password" id="confirmPassword" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label" for="role">Role</label>
+                <select id="role" class="form-select" onchange="updateRoleDescription()" required>
+                    <option value="viewer">👁️ Viewer — Read-only access</option>
+                    <option value="analyst">📊 Analyst — Upload + analyze data</option>
+                    <option value="admin">👑 Admin — Full platform access</option>
+                </select>
+                <div class="role-description" id="roleDescription">
+                    Can view dashboards and download reports only
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+                <button type="submit" class="btn btn-primary">Create User →</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function openCreateModal() {
+    document.getElementById('createModal').classList.add('show');
+}
+
+function closeCreateModal() {
+    document.getElementById('createModal').classList.remove('show');
+    document.getElementById('createUserForm').reset();
+    updateRoleDescription();
+}
+
+function updateRoleDescription() {
+    const role = document.getElementById('role').value;
+    const descriptions = {
+        admin: 'Can manage users, all data access',
+        analyst: 'Can upload CSV, run pipeline, view all analytics',
+        viewer: 'Can view dashboards and download reports only'
+    };
+    document.getElementById('roleDescription').textContent = descriptions[role];
+}
+
+function generatePassword() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    let password = '';
+    for (let i = 0; i < 12; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('password').value = password;
+    document.getElementById('confirmPassword').value = password;
+}
+
+function toggleDropdown(button) {
+    const dropdown = button.nextElementSibling;
+    const isOpen = dropdown.classList.contains('show');
+    
+    // Close all dropdowns
+    document.querySelectorAll('.dropdown-menu').forEach(menu => {
+        menu.classList.remove('show');
+    });
+    
+    // Toggle current dropdown
+    if (!isOpen) {
+        dropdown.classList.add('show');
+    }
+}
+
+async function changeRole(userId, newRole) {
+    const response = await fetch(`/api/admin/users/role/${userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ role: newRole })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+        location.reload();
+    } else {
+        alert(result.message);
+    }
+}
+
+async function deleteUser(userId, username) {
+    if (!confirm(`Are you sure you want to delete user "${username}"? This action cannot be undone.`)) {
+        return;
+    }
+    
+    const response = await fetch(`/api/admin/users/delete/${userId}`, {
+        method: 'POST'
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+        location.reload();
+    } else {
+        alert(result.message);
+    }
+}
+
+document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (password !== confirmPassword) {
+        alert('Passwords do not match');
+        return;
+    }
+    
+    const response = await fetch('/api/admin/users/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            full_name: document.getElementById('fullName').value,
+            username: document.getElementById('username').value,
+            email: document.getElementById('email').value,
+            password: password,
+            role: document.getElementById('role').value
+        })
+    });
+    
+    const result = await response.json();
+    if (result.success) {
+        closeCreateModal();
+        location.reload();
+    } else {
+        alert(result.message);
+    }
+});
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+});
+
+// Close modal when clicking outside
+document.getElementById('createModal').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) {
+        closeCreateModal();
+    }
+});
+
+// Initialize role description
+updateRoleDescription();
+</script>
+{% endblock %}

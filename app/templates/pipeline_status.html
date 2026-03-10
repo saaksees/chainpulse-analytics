@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+
+{% block title %}Pipeline Status{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">⚡ Pipeline Runner</div>
+    <h2 class="cp-page-title">Running All <span>Analysis Scripts</span></h2>
+    <p class="cp-page-subtitle">Processing your data through 6 analysis modules</p>
+</div>
+
+<!-- PIPELINE MODE TOGGLE -->
+<div style="background:#1E293B;border-radius:10px;padding:16px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between">
+    <div>
+        <div style="color:#F1F5F9;font-weight:600;margin-bottom:4px">Pipeline Mode</div>
+        <div style="color:#94A3B8;font-size:13px" id="pipeline-mode-desc">Standard: runs fixed scripts</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+        <span style="color:#94A3B8;font-size:13px">Standard</span>
+        <div onclick="togglePipelineMode()" id="mode-toggle" style="width:52px;height:28px;background:#1E293B;border:2px solid #334155;border-radius:14px;cursor:pointer;position:relative;transition:all 0.3s">
+            <div id="toggle-knob" style="width:20px;height:20px;background:#94A3B8;border-radius:50%;position:absolute;top:2px;left:2px;transition:all 0.3s"></div>
+        </div>
+        <span style="color:#38BDF8;font-size:13px">AutoML</span>
+    </div>
+</div>
+
+<!-- AutoML info card (hidden by default) -->
+<div id="automl-info" style="display:none;background:#0C4A6E;border:1px solid #0369A1;border-radius:10px;padding:16px;margin-bottom:24px;color:#7DD3FC;font-size:13px">
+    <div style="font-weight:700;margin-bottom:8px;color:#38BDF8">⚡ AutoML Mode Active</div>
+    ChainPulse will automatically:<br>
+    • Profile your dataset<br>
+    • Select best forecasting model (ETS / ARIMA / Prophet)<br>
+    • Retrain risk model if needed (XGBoost vs RF vs LightGBM)<br>
+    • Auto-select optimal customer segments (K via elbow method)
+</div>
+
+<!-- OVERALL PROGRESS -->
+<div class="cp-card" style="margin-bottom: 32px;">
+    <div style="padding: 24px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h3 class="cp-chart-title">Overall Progress</h3>
+            <span id="progressText">0% Complete</span>
+        </div>
+        <div class="progress-bar">
+            <div id="progressFill" class="progress-fill"></div>
+        </div>
+    </div>
+</div>
+
+<!-- PIPELINE STEPS -->
+<div class="pipeline-steps">
+    <div class="pipeline-step" id="step-1">
+        <div class="step-icon">📊</div>
+        <div class="step-content">
+            <div class="step-title">1. Exploratory Data Analysis</div>
+            <div class="step-status">⏳ Waiting</div>
+        </div>
+    </div>
+
+    <div class="pipeline-step" id="step-2">
+        <div class="step-icon">📈</div>
+        <div class="step-content">
+            <div class="step-title">2. Demand Forecasting</div>
+            <div class="step-status">⏳ Waiting</div>
+        </div>
+    </div>
+
+    <div class="pipeline-step" id="step-3">
+        <div class="step-icon">🚨</div>
+        <div class="step-content">
+            <div class="step-title">3. Delivery Risk Model</div>
+            <div class="step-status">⏳ Waiting</div>
+        </div>
+    </div>
+
+    <div class="pipeline-step" id="step-4">
+        <div class="step-icon">👥</div>
+        <div class="step-content">
+            <div class="step-title">4. Customer Segmentation</div>
+            <div class="step-status">⏳ Waiting</div>
+        </div>
+    </div>
+
+    <div class="pipeline-step" id="step-5">
+        <div class="step-icon">🔍</div>
+        <div class="step-content">
+            <div class="step-title">5. NLP Analysis</div>
+            <div class="step-status">⏳ Waiting</div>
+        </div>
+    </div>
+
+    <div class="pipeline-step" id="step-6">
+        <div class="step-icon">📤</div>
+        <div class="step-content">
+            <div class="step-title">6. Power BI Export</div>
+            <div class="step-status">⏳ Waiting</div>
+        </div>
+    </div>
+</div>
+
+<!-- COMPLETION MESSAGE -->
+<div id="completionMessage" class="cp-card" style="display: none; margin-top: 32px;">
+    <div style="padding: 32px; text-align: center;">
+        <div id="completionContent"></div>
+    </div>
+</div>
+
+<!-- START BUTTON -->
+<div id="startSection" class="cp-card" style="margin-top: 32px;">
+    <div style="padding: 32px; text-align: center;">
+        <button id="startButton" class="cp-btn cp-btn-primary">
+            🚀 Start Pipeline
+        </button>
+        <div style="margin-top: 16px; color: var(--text-secondary); font-size: 14px;">
+            This will run all 6 analysis scripts sequentially
+        </div>
+    </div>
+</div>
+
+<style>
+.progress-bar {
+    width: 100%;
+    height: 12px;
+    background: var(--bg-secondary);
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--purple));
+    width: 0%;
+    transition: width 0.5s ease;
+    border-radius: 6px;
+}
+
+.pipeline-steps {
+    display: grid;
+    gap: 16px;
+}
+
+.pipeline-step {
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: all 0.3s ease;
+}
+
+.pipeline-step.running {
+    border-color: var(--blue);
+    background: var(--blue-glow);
+    box-shadow: 0 0 20px rgba(56,189,248,0.2);
+}
+
+.pipeline-step.complete {
+    border-color: var(--green);
+    background: var(--green-glow);
+}
+
+.pipeline-step.failed {
+    border-color: var(--red);
+    background: var(--red-glow);
+}
+
+.step-icon {
+    font-size: 32px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-secondary);
+    border-radius: 50%;
+}
+
+.step-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.step-status {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.step-status.running {
+    color: var(--blue);
+    font-weight: 600;
+}
+
+.step-status.complete {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.step-status.failed {
+    color: var(--red);
+    font-weight: 600;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+.running .step-status {
+    animation: pulse 1.5s infinite;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/pipeline_status.js') }}"></script>
+{% endblock %}

@@ -1,0 +1,737 @@
+{% extends 'base.html' %}
+
+{% block title %}Risk Analyzer{% endblock %}
+
+{% block content %}
+<style>
+/* Enhanced Risk Page Styling */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes riskPulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(239, 68, 68, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(239, 68, 68, 0.6); }
+}
+
+.cp-chart-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 24px;
+    margin-bottom: 32px;
+}
+
+.cp-chart-grid.full {
+    grid-template-columns: 1fr;
+}
+
+.cp-chart-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    position: relative;
+    backdrop-filter: blur(10px);
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-chart-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), rgba(245, 158, 11, 0.05));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.cp-chart-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: rgba(239, 68, 68, 0.4);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.cp-chart-card:hover::before {
+    opacity: 1;
+}
+
+.cp-chart-card.full {
+    grid-column: 1 / -1;
+}
+
+.cp-chart-header {
+    padding: 24px 24px 16px 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    border-bottom: 1px solid rgba(239, 68, 68, 0.1);
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.05), transparent);
+}
+
+.cp-chart-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, #F1F5F9, #EF4444);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.cp-chart-subtitle {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.cp-chart-image {
+    width: 100%;
+    height: auto;
+    border-radius: 12px;
+    display: block;
+    transition: transform 0.3s ease;
+}
+
+.cp-chart-image:hover {
+    transform: scale(1.02);
+}
+
+.cp-insight-card {
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-insight-card:hover {
+    transform: translateX(8px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+}
+
+.cp-insight-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-4px); }
+}
+
+.cp-insight-content {
+    flex: 1;
+}
+
+.cp-insight-title {
+    font-weight: 600;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.cp-insight-text {
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+
+/* Color-coded insight cards */
+.insight-blue {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.1), rgba(56, 189, 248, 0.05));
+    border-left: 4px solid var(--blue);
+}
+
+.insight-green {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border-left: 4px solid var(--green);
+}
+
+.insight-purple {
+    background: linear-gradient(135deg, rgba(124, 58, 237, 0.1), rgba(124, 58, 237, 0.05));
+    border-left: 4px solid var(--purple);
+}
+
+.insight-amber {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05));
+    border-left: 4px solid var(--amber);
+}
+
+.insight-red {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05));
+    border-left: 4px solid var(--red);
+}
+
+/* Enhanced KPI Cards */
+.cp-kpi-card {
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.cp-kpi-card:nth-child(1) { animation-delay: 0.1s; }
+.cp-kpi-card:nth-child(2) { animation-delay: 0.2s; }
+.cp-kpi-card:nth-child(3) { animation-delay: 0.3s; }
+.cp-kpi-card:nth-child(4) { animation-delay: 0.4s; }
+
+/* Chart Cards Animation Delays */
+.cp-chart-card:nth-child(1) { animation-delay: 0.2s; }
+.cp-chart-card:nth-child(2) { animation-delay: 0.4s; }
+.cp-chart-card:nth-child(3) { animation-delay: 0.6s; }
+.cp-chart-card:nth-child(4) { animation-delay: 0.8s; }
+
+/* Enhanced Export Buttons */
+.cp-export-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    color: var(--red);
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-export-btn:hover {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(245, 158, 11, 0.2));
+    border-color: var(--red);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+}
+
+/* Risk Level Cards */
+.risk-level-card {
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(10px);
+    animation: fadeInUp 0.8s ease-out;
+}
+
+.risk-level-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.risk-level-card.high-risk {
+    background: linear-gradient(135deg, rgba(239, 68, 68, 0.15), rgba(239, 68, 68, 0.05));
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    animation: riskPulse 2s ease-in-out infinite;
+}
+
+.risk-level-card.medium-risk {
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.15), rgba(245, 158, 11, 0.05));
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.risk-level-card.low-risk {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(16, 185, 129, 0.05));
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+</style>
+
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">🚨 Delivery Risk Analysis</div>
+    <h1 class="cp-page-title">Risk <span>Analyzer</span></h1>
+    <p class="cp-page-subtitle">ML-powered risk assessment using XGBoost with 77.5% ROC-AUC accuracy</p>
+    <div style="margin-top:16px">
+        <a href="/api/report/risk" style="display:inline-flex;align-items:center;gap:8px;background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='#38BDF8';this.style.color='#38BDF8'" onmouseout="this.style.borderColor='#334155';this.style.color='#F1F5F9'">📄 Download Report</a>
+    </div>
+</div>
+
+<!-- RISK OVERVIEW STATS -->
+<div class="cp-kpi-grid">
+    <div class="cp-kpi-card red">
+        <span class="cp-kpi-icon">🚨</span>
+        <div class="cp-kpi-label">High Risk Orders</div>
+        <div class="cp-kpi-value">12,229</div>
+        <div class="cp-kpi-sub">Immediate Action</div>
+    </div>
+    
+    <div class="cp-kpi-card amber">
+        <span class="cp-kpi-icon">⚠️</span>
+        <div class="cp-kpi-label">Medium Risk Orders</div>
+        <div class="cp-kpi-value">7,466</div>
+        <div class="cp-kpi-sub">Monitor Closely</div>
+    </div>
+    
+    <div class="cp-kpi-card green">
+        <span class="cp-kpi-icon">✅</span>
+        <div class="cp-kpi-label">Low Risk Orders</div>
+        <div class="cp-kpi-value">16,409</div>
+        <div class="cp-kpi-sub">On Track</div>
+    </div>
+    
+    <div class="cp-kpi-card purple">
+        <span class="cp-kpi-icon">🤖</span>
+        <div class="cp-kpi-label">Model Accuracy</div>
+        <div class="cp-kpi-value">77.5%</div>
+        <div class="cp-kpi-sub">ROC-AUC Score</div>
+    </div>
+</div>
+
+<!-- RISK DISTRIBUTION -->
+<div class="cp-chart-card" style="margin-bottom: 32px;">
+    <div class="cp-chart-header">
+        <div>
+            <h3 class="cp-chart-title">📊 Risk Level Distribution</h3>
+            <p class="cp-chart-subtitle">Breakdown of orders by risk category</p>
+        </div>
+        <button class="cp-export-btn" onclick="exportChart('risk_distribution')">📥 Export</button>
+    </div>
+    <div style="padding: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+            <!-- Low Risk -->
+            <div class="risk-level-card low-risk">
+                <div style="font-size: 32px; font-weight: 800; color: var(--green); margin-bottom: 8px;">45.4%</div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--green); margin-bottom: 4px;">Low Risk</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">16,409 orders</div>
+            </div>
+            
+            <!-- High Risk -->
+            <div class="risk-level-card high-risk">
+                <div style="font-size: 32px; font-weight: 800; color: var(--red); margin-bottom: 8px;">33.9%</div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--red); margin-bottom: 4px;">High Risk</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">12,229 orders</div>
+            </div>
+            
+            <!-- Medium Risk -->
+            <div class="risk-level-card medium-risk">
+                <div style="font-size: 32px; font-weight: 800; color: var(--amber); margin-bottom: 8px;">20.7%</div>
+                <div style="font-size: 14px; font-weight: 600; color: var(--amber); margin-bottom: 4px;">Medium Risk</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">7,466 orders</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODEL PERFORMANCE VISUALIZATIONS -->
+<div class="cp-chart-grid">
+    <!-- ROC Curves -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📈 ROC Curves Comparison</h3>
+                <p class="cp-chart-subtitle">Model performance comparison</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('roc_curves')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/risk_model/roc_curves.png" 
+                     alt="ROC Curves" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">🏆</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">XGBoost Outperforms</div>
+                    <div class="cp-insight-text">Achieves highest ROC-AUC score of 0.775</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Feature Importance -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🔑 Feature Importance</h3>
+                <p class="cp-chart-subtitle">Most influential factors</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('feature_importance')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/risk_model/feature_importance.png" 
+                     alt="Feature Importance" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">Key Risk Factors</div>
+                    <div class="cp-insight-text">Shipping mode and order priority drive risk</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Confusion Matrix -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📋 Model Performance Matrix</h3>
+                <p class="cp-chart-subtitle">Precision and recall metrics</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('confusion_matrix')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/risk_model/confusion_matrices.png" 
+                     alt="Confusion Matrix" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">✅</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">High Accuracy</div>
+                    <div class="cp-insight-text">Reliable risk prediction capabilities</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Risk Distribution -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📊 Risk Score Distribution</h3>
+                <p class="cp-chart-subtitle">Score distribution analysis</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('risk_distribution_chart')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <img src="/visuals/risk_model/risk_distribution.png" 
+                     alt="Risk Distribution" class="cp-chart-image">
+            </div>
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">⚖️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Balanced Distribution</div>
+                    <div class="cp-insight-text">Enables effective risk prioritization</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- HIGH-RISK FACTORS & RECOMMENDATIONS -->
+<div class="cp-chart-grid" style="margin-top: 32px;">
+    <!-- High-Risk Factors -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">⚠️ High-Risk Factors</h3>
+                <p class="cp-chart-subtitle">Key risk indicators identified</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="cp-insight-card insight-red">
+                <div class="cp-insight-icon" style="background: var(--red);">🚀</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--red);">First Class Shipping</div>
+                    <div class="cp-insight-text">95.3% late delivery rate</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">⚡</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">High Priority Orders</div>
+                    <div class="cp-insight-text">Increased complexity and rush processing</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">🏌️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">Specific Categories</div>
+                    <div class="cp-insight-text">Golf Bags & Carts (68.9% late rate)</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">🗺️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">Regional Variations</div>
+                    <div class="cp-insight-text">Some regions consistently underperform</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actionable Recommendations -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">💡 Recommended Actions</h3>
+                <p class="cp-chart-subtitle">Strategic improvements to reduce risk</p>
+            </div>
+        </div>
+        <div style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+            <div class="cp-insight-card insight-blue">
+                <div class="cp-insight-icon" style="background: var(--blue);">🚢</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--blue);">1. Shipping Optimization</div>
+                    <div class="cp-insight-text">Avoid First Class for time-sensitive orders</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-green">
+                <div class="cp-insight-icon" style="background: var(--green);">📦</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--green);">2. Inventory Management</div>
+                    <div class="cp-insight-text">Pre-position stock for high-risk categories</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-amber">
+                <div class="cp-insight-icon" style="background: var(--amber);">⚙️</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--amber);">3. Process Improvement</div>
+                    <div class="cp-insight-text">Streamline high-priority order processing</div>
+                </div>
+            </div>
+            
+            <div class="cp-insight-card insight-purple">
+                <div class="cp-insight-icon" style="background: var(--purple);">🎯</div>
+                <div class="cp-insight-content">
+                    <div class="cp-insight-title" style="color: var(--purple);">4. Regional Focus</div>
+                    <div class="cp-insight-text">Improve logistics in underperforming regions</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODEL TECHNICAL DETAILS -->
+<div class="cp-chart-card full" style="margin-top: 32px;">
+    <div class="cp-chart-header">
+        <div>
+            <h3 class="cp-chart-title">🔧 Model Technical Details</h3>
+            <p class="cp-chart-subtitle">XGBoost implementation specifications</p>
+        </div>
+    </div>
+    <div style="padding: 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; margin-bottom: 24px;">
+            <div style="text-align: center;">
+                <div style="font-size: 28px; font-weight: 800; color: var(--blue); margin-bottom: 8px;">XGBoost</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Algorithm</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 28px; font-weight: 800; color: var(--green); margin-bottom: 8px;">0.775</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">ROC-AUC Score</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 28px; font-weight: 800; color: var(--amber); margin-bottom: 8px;">72%</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Accuracy</div>
+            </div>
+            <div style="text-align: center;">
+                <div style="font-size: 28px; font-weight: 800; color: var(--purple); margin-bottom: 8px;">SMOTE</div>
+                <div style="font-size: 12px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px;">Balancing</div>
+            </div>
+        </div>
+        
+        <div style="padding-top: 24px; border-top: 1px solid var(--border);">
+            <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.6; margin: 0;">
+                <span style="color: var(--blue);">ℹ️</span>
+                Model trained on 158,363 samples with SMOTE balancing to handle class imbalance. 
+                Features include shipping mode, order priority, category, and regional factors.
+            </p>
+        </div>
+    </div>
+</div>
+
+<!-- ═══ DEMO SECTION ═══ -->
+<div style="margin-top:2rem;margin-bottom:1rem">
+    <div style="background:#1E293B;border:1px solid #38BDF8;border-radius:12px;padding:20px;text-align:center">
+        <div style="color:#38BDF8;font-size:14px;font-weight:600;margin-bottom:8px">🎮 DEMO MODE</div>
+        <p style="color:#94A3B8;font-size:14px;margin-bottom:16px">Test the What-If simulator with sample data</p>
+        <button onclick="loadDemoPrediction()" style="background:#38BDF8;color:#0A0E1A;border:none;border-radius:8px;padding:12px 24px;font-size:14px;font-weight:700;cursor:pointer">
+            🚀 Load Demo Prediction
+        </button>
+    </div>
+</div>
+
+<!-- ═══ WHAT-IF SIMULATOR ═══ -->
+<div id="whatif-section" style="margin-top:2rem">
+<div style="margin-bottom:20px">
+<div style="display:inline-block;background:#1E293B;border:1px solid #38BDF8;color:#38BDF8;padding:4px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-bottom:12px">🎮 WHAT-IF SIMULATOR</div>
+<h2 style="color:#F1F5F9;font-size:24px;font-weight:700;margin-bottom:8px">What-If <span style="color:#38BDF8">Simulator</span></h2>
+<p style="color:#94A3B8;font-size:15px">Change order parameters and instantlysee how risk and revenue change</p>
+</div>
+<div style="background:#111827;border:1px solid #1E293B;border-radius:16px;padding:28px">
+<!-- Info bar -->
+<div style="background:#0C4A6E;border:1px solid #0369A1;border-radius:8px;padding:12px 16px;margin-bottom:24px;color:#7DD3FC;font-size:13px;display:flex;align-items:center;gap:10px">
+<span>💡</span>
+<span>Run a risk prediction above first,then use this simulator to explorewhat-if scenarios instantly</span>
+</div>
+<!-- Two column layout -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px">
+<!-- LEFT: Current order (locked) -->
+<div>
+<div style="color:#94A3B8;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">📌 Current Order</div>
+<div style="background:#0A0E1A;border:1px solid #1E293B;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:14px;color:#94A3B8">Shipping:<span id="wi-cur-shipping"style="color:#F1F5F9;font-weight:600;float:right">—</span></div>
+<div style="background:#0A0E1A;border:1px solid #1E293B;border-radius:8px;padding:12px 16px;margin-bottom:8px;font-size:14px;color:#94A3B8">Region:<span id="wi-cur-region"style="color:#F1F5F9;font-weight:600;float:right">—</span></div>
+<div style="background:#0A0E1A;border:1px solid #1E293B;border-radius:8px;padding:12px 16px;font-size:14px;color:#94A3B8">Category:<span id="wi-cur-category"style="color:#F1F5F9;font-weight:600;float:right">—</span></div>
+</div>
+<!-- RIGHT: What-if (editable) -->
+<div>
+<div style="color:#38BDF8;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px">🔄 What If Instead...</div>
+<select id="wi-shipping"style="width:100%;background:#0A0E1A;border:1px solid #1E293B;border-radius:8px;padding:12px 16px;color:#F1F5F9;font-size:14px;margin-bottom:8px;outline:none">
+<option>First Class</option>
+<option>Second Class</option>
+<option selected>Standard Class</option>
+<option>Same Day</option>
+</select>
+<select id="wi-region"style="width:100%;background:#0A0E1A;border:1px solid #1E293B;border-radius:8px;padding:12px 16px;color:#F1F5F9;font-size:14px;margin-bottom:8px;outline:none">
+<option>Western Europe</option>
+<option>Central America</option>
+<option>Southern Europe</option>
+<option>South Asia</option>
+<option>Oceania</option>
+<option>Eastern Asia</option>
+<option>West Asia</option>
+<option>North America</option>
+<option>Eastern Europe</option>
+<option>South America</option>
+</select>
+<select id="wi-category"style="width:100%;background:#0A0E1A;border:1px solid #1E293B;border-radius:8px;padding:12px 16px;color:#F1F5F9;font-size:14px;outline:none">
+<option>Fishing</option>
+<option>Cleats</option>
+<option>Camping & Hiking</option>
+<option>Cardio Equipment</option>
+<option>Women's Apparel</option>
+<option>Water Sports</option>
+<option>Indoor/Outdoor Games</option>
+<option>Lacrosse</option>
+<option>Golf Bags & Carts</option>
+<option>Pet Supplies</option>
+</select>
+</div>
+</div>
+<!-- Run button -->
+<button id="wi-run-btn"onclick="runWhatIf()"disabledstyle="width:100%;padding:14px;background:#1E293B;color:#475569;border:1px solid #334155;border-radius:10px;font-size:15px;font-weight:700;cursor:not-allowed;margin-bottom:24px;transition:all 0.3s"id="wi-run-btn">🎮 Run Prediction First to Enable</button>
+<!-- Results (hidden initially) -->
+<div id="wi-results"style="display:none">
+<!-- Comparison row -->
+<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:center;margin-bottom:20px">
+<!-- Original result -->
+<div style="background:#0A0E1A;border:1px solid #1E293B;border-radius:12px;padding:20px;text-align:center">
+<div style="color:#94A3B8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">CURRENT RISK</div>
+<div id="wi-orig-badge"style="font-size:16px;font-weight:700;padding:6px 16px;border-radius:8px;display:inline-block;margin-bottom:8px">—</div>
+<div id="wi-orig-prob"style="color:#94A3B8;font-size:13px;margin-bottom:4px">—</div>
+<div id="wi-orig-rev"style="color:#EF4444;font-size:12px">—</div>
+</div>
+<!-- Arrow -->
+<div id="wi-arrow"style="font-size:28px;text-align:center;color:#94A3B8">→</div>
+<!-- What-if result -->
+<div style="background:#0A0E1A;border:2px solid #38BDF8;border-radius:12px;padding:20px;text-align:center">
+<div style="color:#38BDF8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">WHAT-IF RISK</div>
+<div id="wi-whatif-badge"style="font-size:16px;font-weight:700;padding:6px 16px;border-radius:8px;display:inline-block;margin-bottom:8px">—</div>
+<div id="wi-whatif-prob"style="color:#94A3B8;font-size:13px;margin-bottom:4px">—</div>
+<div id="wi-whatif-rev"style="color:#EF4444;font-size:12px">—</div>
+</div>
+</div>
+<!-- Savings box -->
+<div id="wi-savings-box"style="border-radius:12px;padding:20px;text-align:center;margin-bottom:16px;border:1px solid #1E293B">
+<div style="font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;color:#94A3B8">ESTIMATED SAVING PER ORDER</div>
+<div id="wi-savings-amt"style="font-size:40px;font-weight:800">$0.00</div>
+</div>
+<!-- Recommendation -->
+<div id="wi-recommendation"style="background:#1E293B;border-radius:10px;padding:16px;color:#F1F5F9;font-size:14px;line-height:1.7;border-left:4px solid #38BDF8"></div>
+</div>
+</div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/risk.js') }}"></script>
+<script src="{{ url_for('static', filename='js/whatif.js') }}"></script>
+<script>
+// Enhanced Risk Page Interactions
+function exportChart(chartType) {
+    // Simulate chart export
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.textContent = '⏳ Exporting...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.textContent = '✅ Exported!';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 2000);
+    }, 1500);
+    
+    console.log(`Exporting chart: ${chartType}`);
+}
+
+// Intersection Observer for animations
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.cp-chart-card, .cp-insight-card, .risk-level-card').forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Initialize animations
+document.addEventListener('DOMContentLoaded', () => {
+    setupScrollAnimations();
+    
+    // Add hover effects to chart images
+    document.querySelectorAll('.cp-chart-image').forEach(img => {
+        img.addEventListener('mouseenter', () => {
+            img.style.transform = 'scale(1.02)';
+        });
+        
+        img.addEventListener('mouseleave', () => {
+            img.style.transform = 'scale(1)';
+        });
+    });
+    
+    // Add pulse effect to high-risk cards
+    const highRiskCards = document.querySelectorAll('.high-risk');
+    highRiskCards.forEach(card => {
+        card.addEventListener('mouseenter', () => {
+            card.style.animationDuration = '1s';
+        });
+        
+        card.addEventListener('mouseleave', () => {
+            card.style.animationDuration = '2s';
+        });
+    });
+});
+</script>
+{% endblock %}

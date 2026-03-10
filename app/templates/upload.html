@@ -1,0 +1,225 @@
+{% extends 'base.html' %}
+
+{% block title %}Upload Dataset{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">📁 Data Management</div>
+    <h2 class="cp-page-title">Upload New <span>Dataset</span></h2>
+    <p class="cp-page-subtitle">Upload a new supply chain CSV to automatically refresh all analytics</p>
+</div>
+
+<!-- UPLOAD CARD -->
+<div class="cp-card" style="margin-bottom: 32px;">
+    <div style="padding: 32px;">
+        <!-- Drag & Drop Zone -->
+        <div id="dropZone" class="upload-drop-zone">
+            <div class="upload-icon">📁</div>
+            <div class="upload-text">Drag & drop your CSV file here</div>
+            <div class="upload-subtext">or click to browse</div>
+            <input type="file" id="fileInput" accept=".csv" style="display: none;">
+        </div>
+        
+        <!-- Requirements -->
+        <div style="margin-top: 24px; text-align: center; color: var(--text-secondary); font-size: 14px;">
+            <div>✅ Supported format: CSV files only</div>
+            <div>✅ Required: Date and Sales columns</div>
+            <div>✅ Minimum: 1,000 rows</div>
+        </div>
+    </div>
+</div>
+
+<!-- VALIDATION RESULT -->
+<div id="validationResult" class="cp-card" style="display: none; margin-bottom: 32px;">
+    <div style="padding: 24px;">
+        <div id="validationContent"></div>
+    </div>
+</div>
+
+<!-- UPLOAD HISTORY -->
+<div class="cp-card">
+    <div style="padding: 24px 24px 16px;">
+        <h3 class="cp-chart-title">📋 Upload History</h3>
+        <p class="cp-chart-subtitle">Recent dataset uploads</p>
+    </div>
+    <div style="padding: 0 24px 24px;">
+        {% if history %}
+        <div class="upload-history-table">
+            <div class="upload-history-header">
+                <div>Date</div>
+                <div>Filename</div>
+                <div>Rows</div>
+                <div>Revenue</div>
+                <div>Late Rate</div>
+                <div>Status</div>
+            </div>
+            {% for entry in history %}
+            <div class="upload-history-row">
+                <div>{{ entry.timestamp[:10] }}</div>
+                <div>{{ entry.filename }}</div>
+                <div>{{ "{:,}".format(entry.rows) }}</div>
+                <div>{{ entry.revenue }}</div>
+                <div>{{ entry.late_rate }}</div>
+                <div class="status-{{ entry.status }}">{{ entry.status.title() }}</div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div style="text-align: center; color: var(--text-secondary); padding: 32px;">
+            No uploads yet. Upload your first dataset above!
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.upload-drop-zone {
+    border: 2px dashed var(--blue);
+    border-radius: 16px;
+    padding: 48px 32px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    background: var(--blue-glow);
+}
+
+.upload-drop-zone:hover {
+    border-color: var(--blue);
+    background: rgba(56,189,248,0.1);
+    box-shadow: 0 0 20px rgba(56,189,248,0.3);
+}
+
+.upload-drop-zone.dragover {
+    border-color: var(--green);
+    background: var(--green-glow);
+    box-shadow: 0 0 20px rgba(16,185,129,0.3);
+}
+
+.upload-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+.upload-text {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.upload-subtext {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.upload-history-table {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr 1fr 1fr;
+    gap: 16px;
+    font-size: 14px;
+}
+
+.upload-history-header {
+    display: contents;
+    font-weight: 600;
+    color: var(--text-primary);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+}
+
+.upload-history-header > div {
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+}
+
+.upload-history-row {
+    display: contents;
+    color: var(--text-secondary);
+}
+
+.upload-history-row > div {
+    padding: 8px 0;
+}
+
+.status-success {
+    color: var(--green);
+    font-weight: 600;
+}
+
+.status-failed {
+    color: var(--red);
+    font-weight: 600;
+}
+
+.validation-success {
+    border: 2px solid var(--green);
+    background: var(--green-glow);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.validation-error {
+    border: 2px solid var(--red);
+    background: var(--red-glow);
+    border-radius: 12px;
+    padding: 24px;
+}
+
+.validation-title {
+    font-size: 18px;
+    font-weight: 600;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.validation-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 16px;
+    margin: 16px 0;
+}
+
+.validation-stat {
+    text-align: center;
+}
+
+.validation-stat-value {
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.validation-stat-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+.error-list, .warning-list {
+    margin: 16px 0;
+}
+
+.error-item {
+    color: var(--red);
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.warning-item {
+    color: var(--amber);
+    margin: 8px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/upload.js') }}"></script>
+{% endblock %}

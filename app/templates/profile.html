@@ -1,0 +1,382 @@
+{% extends 'base.html' %}
+
+{% block title %}Profile - ChainPulse{% endblock %}
+
+{% block content %}
+<style>
+    :root {
+        --bg-primary: #0A0E1A;
+        --bg-card: #111827;
+        --border: #1E293B;
+        --accent: #38BDF8;
+        --text: #F1F5F9;
+        --muted: #94A3B8;
+        --red: #EF4444;
+        --green: #10B981;
+        --amber: #F59E0B;
+    }
+
+    .profile-header {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 32px;
+        margin-bottom: 24px;
+        display: flex;
+        align-items: center;
+        gap: 24px;
+    }
+
+    .avatar {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), #7C3AED);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        font-weight: 700;
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .user-info h1 {
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text);
+        margin-bottom: 4px;
+    }
+
+    .username {
+        font-size: 16px;
+        color: var(--muted);
+        margin-bottom: 12px;
+    }
+
+    .role-badge {
+        display: inline-block;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-bottom: 16px;
+    }
+
+    .role-admin { background: rgba(239, 68, 68, 0.2); color: #EF4444; }
+    .role-analyst { background: rgba(56, 189, 248, 0.2); color: #38BDF8; }
+    .role-viewer { background: rgba(71, 85, 105, 0.2); color: #475569; }
+
+    .user-meta {
+        font-size: 14px;
+        color: var(--muted);
+        line-height: 1.6;
+    }
+
+    .profile-section {
+        background: var(--bg-card);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 24px;
+    }
+
+    .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+        margin-bottom: 8px;
+    }
+
+    .form-input {
+        width: 100%;
+        padding: 12px 16px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text);
+        font-size: 14px;
+        transition: border-color 0.3s ease;
+    }
+
+    .form-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+    }
+
+    .form-input:disabled {
+        background: rgba(71, 85, 105, 0.1);
+        color: var(--muted);
+        cursor: not-allowed;
+    }
+
+    .input-wrapper {
+        position: relative;
+    }
+
+    .password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        color: var(--muted);
+        cursor: pointer;
+        font-size: 16px;
+        padding: 4px;
+    }
+
+    .password-toggle:hover {
+        color: var(--text);
+    }
+
+    .password-strength {
+        height: 4px;
+        background: var(--border);
+        border-radius: 2px;
+        margin-top: 8px;
+        overflow: hidden;
+    }
+
+    .password-strength-bar {
+        height: 100%;
+        width: 0%;
+        transition: all 0.3s ease;
+        border-radius: 2px;
+    }
+
+    .strength-weak { background: var(--red); }
+    .strength-medium { background: var(--amber); }
+    .strength-strong { background: var(--green); }
+
+    .btn {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .btn-primary {
+        background: var(--accent);
+        color: white;
+    }
+
+    .btn-primary:hover {
+        background: #0EA5E9;
+        transform: translateY(-1px);
+    }
+
+    .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 16px 20px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 500;
+        z-index: 1000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+    }
+
+    .toast.show {
+        transform: translateX(0);
+    }
+
+    .toast-success {
+        background: rgba(16, 185, 129, 0.2);
+        border: 1px solid rgba(16, 185, 129, 0.3);
+        color: var(--green);
+    }
+
+    .toast-error {
+        background: rgba(239, 68, 68, 0.2);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: var(--red);
+    }
+</style>
+
+<!-- Profile Header -->
+<div class="profile-header">
+    <div class="avatar">{{ user.initials }}</div>
+    <div class="user-info">
+        <h1>{{ user.full_name }}</h1>
+        <div class="username">@{{ user.username }}</div>
+        <div class="role-badge role-{{ user.role }}">{{ user.role }}</div>
+        <div class="user-meta">
+            <div>Member since {{ user.created_at }}</div>
+            <div>Last login {{ user.last_login }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Profile Section -->
+<div class="profile-section">
+    <div class="section-title">👤 Personal Information</div>
+    <form id="profileForm">
+        <div class="form-group">
+            <label class="form-label" for="fullName">Full Name</label>
+            <input type="text" id="fullName" class="form-input" value="{{ user.full_name }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="email">Email</label>
+            <input type="email" id="email" class="form-input" value="{{ user.email }}">
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="username">Username</label>
+            <input type="text" id="username" class="form-input" value="{{ user.username }}" disabled>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="role">Role</label>
+            <div class="role-badge role-{{ user.role }}">{{ user.role }}</div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
+</div>
+
+<!-- Change Password Section -->
+<div class="profile-section">
+    <div class="section-title">🔒 Change Password</div>
+    <form id="passwordForm">
+        <div class="form-group">
+            <label class="form-label" for="currentPassword">Current Password</label>
+            <div class="input-wrapper">
+                <input type="password" id="currentPassword" class="form-input">
+                <button type="button" class="password-toggle" onclick="togglePassword('currentPassword')">👁️</button>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="newPassword">New Password</label>
+            <div class="input-wrapper">
+                <input type="password" id="newPassword" class="form-input" oninput="checkPasswordStrength()">
+                <button type="button" class="password-toggle" onclick="togglePassword('newPassword')">👁️</button>
+            </div>
+            <div class="password-strength">
+                <div class="password-strength-bar" id="strengthBar"></div>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label" for="confirmPassword">Confirm New Password</label>
+            <div class="input-wrapper">
+                <input type="password" id="confirmPassword" class="form-input">
+                <button type="button" class="password-toggle" onclick="togglePassword('confirmPassword')">👁️</button>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Update Password</button>
+    </form>
+</div>
+
+<script>
+function togglePassword(fieldId) {
+    const field = document.getElementById(fieldId);
+    const toggle = field.nextElementSibling;
+    
+    if (field.type === 'password') {
+        field.type = 'text';
+        toggle.textContent = '🙈';
+    } else {
+        field.type = 'password';
+        toggle.textContent = '👁️';
+    }
+}
+
+function checkPasswordStrength() {
+    const password = document.getElementById('newPassword').value;
+    const strengthBar = document.getElementById('strengthBar');
+    
+    let strength = 0;
+    if (password.length >= 8) strength++;
+    if (/[A-Z]/.test(password)) strength++;
+    if (/[a-z]/.test(password)) strength++;
+    if (/[0-9]/.test(password)) strength++;
+    if (/[^A-Za-z0-9]/.test(password)) strength++;
+    
+    const percentage = (strength / 5) * 100;
+    strengthBar.style.width = percentage + '%';
+    
+    strengthBar.className = 'password-strength-bar';
+    if (strength <= 2) strengthBar.classList.add('strength-weak');
+    else if (strength <= 4) strengthBar.classList.add('strength-medium');
+    else strengthBar.classList.add('strength-strong');
+}
+
+function showToast(message, type) {
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.classList.add('show'), 100);
+    setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => document.body.removeChild(toast), 300);
+    }, 3000);
+}
+
+document.getElementById('profileForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const response = await fetch('/api/profile/update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            full_name: document.getElementById('fullName').value,
+            email: document.getElementById('email').value
+        })
+    });
+    
+    const result = await response.json();
+    showToast(result.message, result.success ? 'success' : 'error');
+});
+
+document.getElementById('passwordForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    const newPassword = document.getElementById('newPassword').value;
+    const confirmPassword = document.getElementById('confirmPassword').value;
+    
+    if (newPassword !== confirmPassword) {
+        showToast('Passwords do not match', 'error');
+        return;
+    }
+    
+    const response = await fetch('/api/profile/password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            old_password: document.getElementById('currentPassword').value,
+            new_password: newPassword
+        })
+    });
+    
+    const result = await response.json();
+    showToast(result.message, result.success ? 'success' : 'error');
+    
+    if (result.success) {
+        document.getElementById('passwordForm').reset();
+        document.getElementById('strengthBar').style.width = '0%';
+    }
+});
+</script>
+{% endblock %}

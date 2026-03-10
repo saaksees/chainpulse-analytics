@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Denied - ChainPulse</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0A0E1A;
+            --bg-card: #111827;
+            --border: #1E293B;
+            --accent: #38BDF8;
+            --text: #F1F5F9;
+            --muted: #94A3B8;
+            --red: #EF4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-primary);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(124, 58, 237, 0.05) 0%, transparent 50%);
+        }
+
+        .error-container {
+            text-align: center;
+            max-width: 500px;
+            padding: 40px;
+        }
+
+        .error-icon {
+            font-size: 120px;
+            margin-bottom: 24px;
+            opacity: 0.8;
+        }
+
+        .error-code {
+            font-size: 72px;
+            font-weight: 800;
+            color: var(--accent);
+            margin-bottom: 16px;
+            line-height: 1;
+        }
+
+        .error-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 16px;
+        }
+
+        .error-message {
+            font-size: 18px;
+            color: var(--muted);
+            margin-bottom: 24px;
+            line-height: 1.6;
+        }
+
+        .user-role {
+            display: inline-block;
+            padding: 8px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 32px;
+        }
+
+        .role-admin { 
+            background: rgba(239, 68, 68, 0.2); 
+            border-color: rgba(239, 68, 68, 0.3);
+            color: #EF4444; 
+        }
+        .role-analyst { 
+            background: rgba(56, 189, 248, 0.2); 
+            border-color: rgba(56, 189, 248, 0.3);
+            color: #38BDF8; 
+        }
+        .role-viewer { 
+            background: rgba(71, 85, 105, 0.2); 
+            border-color: rgba(71, 85, 105, 0.3);
+            color: #475569; 
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #0EA5E9;
+            transform: translateY(-1px);
+        }
+
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+            transform: translateY(-1px);
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-icon">🚫</div>
+        <div class="error-code">403</div>
+        <h1 class="error-title">Access Denied</h1>
+        <p class="error-message">
+            You don't have permission to view this page.<br>
+            Contact your administrator if you believe this is an error.
+        </p>
+        
+        {% if current_user and current_user.is_authenticated %}
+        <div class="user-role role-{{ current_user.role }}">
+            Your role: {{ current_user.role }}
+        </div>
+        {% endif %}
+        
+        <div class="action-buttons">
+            <button class="btn btn-secondary" onclick="history.back()">
+                ← Go Back
+            </button>
+            <a href="/" class="btn btn-primary">
+                🏠 Home
+            </a>
+        </div>
+    </div>
+    
+    <div class="footer">
+        ChainPulse v1.0 · Supply Chain Analytics Platform
+    </div>
+</body>
+</html>

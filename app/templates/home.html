@@ -1,0 +1,969 @@
+{% extends 'base.html' %}
+
+{% block title %}Home{% endblock %}
+
+{% block content %}
+<style>
+/* Enhanced Animations & Effects */
+@keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+}
+
+@keyframes pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes slideInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(56, 189, 248, 0.3); }
+    50% { box-shadow: 0 0 40px rgba(56, 189, 248, 0.6); }
+}
+
+@keyframes gradientShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Particle Background */
+.particles-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: rgba(56, 189, 248, 0.6);
+    border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
+}
+
+/* Enhanced Hero Section */
+.cp-hero {
+    text-align: center;
+    padding: 60px 0;
+    position: relative;
+    background: linear-gradient(135deg, 
+        rgba(56, 189, 248, 0.1) 0%, 
+        rgba(124, 58, 237, 0.1) 50%, 
+        rgba(16, 185, 129, 0.1) 100%);
+    border-radius: 20px;
+    margin-bottom: 40px;
+    overflow: hidden;
+}
+
+.cp-hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(45deg, 
+        rgba(56, 189, 248, 0.05), 
+        rgba(124, 58, 237, 0.05), 
+        rgba(16, 185, 129, 0.05), 
+        rgba(245, 158, 11, 0.05));
+    background-size: 400% 400%;
+    animation: gradientShift 8s ease infinite;
+}
+
+.cp-hero-badge {
+    display: inline-block;
+    padding: 8px 20px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(124, 58, 237, 0.2));
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 50px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #38BDF8;
+    margin-bottom: 20px;
+    animation: pulse 3s ease-in-out infinite;
+    backdrop-filter: blur(10px);
+}
+
+.cp-hero-title {
+    font-size: 64px;
+    font-weight: 900;
+    margin-bottom: 16px;
+    animation: slideInUp 1s ease-out;
+}
+
+.gradient {
+    background: linear-gradient(135deg, #38BDF8, #7C3AED, #10B981);
+    background-size: 300% 300%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: gradientShift 4s ease infinite;
+}
+
+.cp-hero-subtitle {
+    font-size: 24px;
+    color: #94A3B8;
+    margin-bottom: 12px;
+    animation: slideInUp 1s ease-out 0.2s both;
+}
+
+.cp-hero-desc {
+    font-size: 18px;
+    color: #64748B;
+    margin-bottom: 32px;
+    max-width: 600px;
+    margin-left: auto;
+    margin-right: auto;
+    animation: slideInUp 1s ease-out 0.4s both;
+}
+
+.cp-hero-buttons {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+    animation: slideInUp 1s ease-out 0.6s both;
+}
+
+/* Enhanced KPI Cards */
+.cp-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.cp-kpi-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.8));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 32px;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.4s ease;
+    backdrop-filter: blur(10px);
+}
+
+.cp-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, transparent, rgba(56, 189, 248, 0.05));
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.cp-kpi-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    border-color: var(--blue);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.cp-kpi-card:hover::before {
+    opacity: 1;
+}
+
+.cp-kpi-card.blue:hover {
+    box-shadow: 0 20px 40px rgba(56, 189, 248, 0.3);
+}
+
+.cp-kpi-card.purple:hover {
+    box-shadow: 0 20px 40px rgba(124, 58, 237, 0.3);
+}
+
+.cp-kpi-card.red:hover {
+    box-shadow: 0 20px 40px rgba(239, 68, 68, 0.3);
+}
+
+.cp-kpi-card.green:hover {
+    box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+}
+
+.cp-kpi-card.amber:hover {
+    box-shadow: 0 20px 40px rgba(245, 158, 11, 0.3);
+}
+
+.cp-kpi-icon {
+    font-size: 48px;
+    display: block;
+    margin-bottom: 16px;
+    animation: float 4s ease-in-out infinite;
+}
+
+.cp-kpi-value {
+    font-size: 36px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #F1F5F9, #94A3B8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Enhanced Feature Cards */
+.cp-feature-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    padding: 40px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.5s ease;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+}
+
+.cp-feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, 
+        rgba(56, 189, 248, 0.05), 
+        rgba(124, 58, 237, 0.05));
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.cp-feature-card:hover {
+    transform: translateY(-12px) scale(1.03);
+    border-color: var(--blue);
+    box-shadow: 0 30px 60px rgba(0, 0, 0, 0.4);
+}
+
+.cp-feature-card:hover::before {
+    opacity: 1;
+}
+
+.cp-feature-icon {
+    font-size: 56px;
+    display: block;
+    filter: drop-shadow(0 0 20px rgba(56, 189, 248, 0.6));
+    animation: float 5s ease-in-out infinite;
+}
+
+.cp-feature-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: linear-gradient(135deg, #F1F5F9, #38BDF8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+/* Animation Classes */
+.cp-animate {
+    opacity: 0;
+    transform: translateY(30px);
+    animation: slideInUp 0.8s ease-out forwards;
+}
+
+.cp-animate-delay-1 { animation-delay: 0.1s; }
+.cp-animate-delay-2 { animation-delay: 0.2s; }
+.cp-animate-delay-3 { animation-delay: 0.3s; }
+.cp-animate-delay-4 { animation-delay: 0.4s; }
+.cp-animate-delay-5 { animation-delay: 0.5s; }
+
+/* Enhanced Page Headers */
+.cp-page-header {
+    text-align: center;
+    margin-bottom: 40px;
+    animation: slideInUp 1s ease-out;
+}
+
+.cp-page-badge {
+    display: inline-block;
+    padding: 6px 16px;
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(124, 58, 237, 0.2));
+    border: 1px solid rgba(56, 189, 248, 0.3);
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #38BDF8;
+    margin-bottom: 12px;
+    backdrop-filter: blur(10px);
+}
+
+.cp-page-title {
+    font-size: 42px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    color: #F1F5F9;
+}
+
+.cp-page-title span {
+    background: linear-gradient(135deg, #38BDF8, #7C3AED);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.cp-page-subtitle {
+    font-size: 18px;
+    color: #94A3B8;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+/* Enhanced Buttons */
+.cp-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 32px;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    border: none;
+    font-family: 'Inter', sans-serif;
+    text-decoration: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.cp-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.cp-btn:hover::before {
+    left: 100%;
+}
+
+.cp-btn-primary {
+    background: linear-gradient(135deg, #38BDF8, #0EA5E9);
+    color: #0A0E1A;
+    box-shadow: 0 8px 32px rgba(56, 189, 248, 0.4);
+}
+
+.cp-btn-primary:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 48px rgba(56, 189, 248, 0.6);
+}
+
+.cp-btn-secondary {
+    background: linear-gradient(135deg, transparent, rgba(56, 189, 248, 0.1));
+    color: var(--text-primary);
+    border: 2px solid rgba(56, 189, 248, 0.3);
+    backdrop-filter: blur(10px);
+}
+
+.cp-btn-secondary:hover {
+    background: linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(124, 58, 237, 0.2));
+    border-color: #38BDF8;
+    color: #38BDF8;
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 48px rgba(56, 189, 248, 0.3);
+}
+
+/* Pipeline Button Styling */
+.pipeline-card {
+    cursor: pointer !important;
+}
+
+.cp-pipeline-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 32px;
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: white;
+    border: none;
+    border-radius: 16px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.4s ease;
+    font-family: 'Inter', sans-serif;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+    margin-top: 8px;
+    width: 100%;
+    justify-content: center;
+}
+
+.cp-pipeline-btn::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.cp-pipeline-btn:hover::before {
+    left: 100%;
+}
+
+.cp-pipeline-btn:hover {
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: 0 16px 48px rgba(16, 185, 129, 0.6);
+    background: linear-gradient(135deg, #059669, #047857);
+}
+
+.cp-pipeline-btn:active {
+    transform: translateY(-2px) scale(1.02);
+}
+
+.cp-pipeline-btn.running {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    box-shadow: 0 8px 32px rgba(245, 158, 11, 0.4);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.cp-pipeline-btn.running:hover {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    box-shadow: 0 16px 48px rgba(245, 158, 11, 0.6);
+}
+
+.cp-pipeline-btn.success {
+    background: linear-gradient(135deg, #10B981, #059669);
+    box-shadow: 0 8px 32px rgba(16, 185, 129, 0.4);
+}
+
+.cp-pipeline-btn.error {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    box-shadow: 0 8px 32px rgba(239, 68, 68, 0.4);
+}
+
+.btn-icon {
+    font-size: 18px;
+    transition: transform 0.3s ease;
+}
+
+.cp-pipeline-btn.running .btn-icon {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.btn-text {
+    font-weight: 700;
+}
+
+/* Pipeline Progress Modal */
+.pipeline-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(10px);
+}
+
+.pipeline-modal-content {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.95));
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 40px;
+    max-width: 500px;
+    width: 90%;
+    text-align: center;
+    backdrop-filter: blur(20px);
+}
+
+.pipeline-progress {
+    width: 100%;
+    height: 8px;
+    background: rgba(56, 189, 248, 0.2);
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 20px 0;
+}
+
+.pipeline-progress-bar {
+    height: 100%;
+    background: linear-gradient(135deg, #10B981, #38BDF8);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+    width: 0%;
+}
+
+.pipeline-steps {
+    text-align: left;
+    margin: 20px 0;
+}
+
+.pipeline-step {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    font-size: 14px;
+}
+
+.step-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+}
+
+.step-pending {
+    background: rgba(148, 163, 184, 0.2);
+    color: #94A3B8;
+}
+
+.step-running {
+    background: linear-gradient(135deg, #F59E0B, #D97706);
+    color: white;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.step-success {
+    background: linear-gradient(135deg, #10B981, #059669);
+    color: white;
+}
+
+.step-error {
+    background: linear-gradient(135deg, #EF4444, #DC2626);
+    color: white;
+}
+</style>
+
+<!-- Particle Background -->
+<div class="particles-container" id="particles"></div>
+
+<!-- HERO SECTION -->
+<div class="cp-hero">
+    <div class="cp-hero-badge">⚡ Supply Chain Intelligence Platform</div>
+    <h1 class="cp-hero-title"><span class="gradient">ChainPulse</span></h1>
+    <p class="cp-hero-subtitle">Feel the pulse of your supply chain</p>
+    <p class="cp-hero-desc">Advanced analytics platform powered by machine learning and AI to optimize your business operations.</p>
+    <div class="cp-hero-buttons">
+        <a href="/risk" class="cp-btn cp-btn-primary">🚨 Analyze Risk</a>
+        <a href="/eda" class="cp-btn cp-btn-secondary">📊 Explore Data</a>
+    </div>
+</div>
+
+<div class="cp-divider"></div>
+
+<!-- KPI CARDS -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">📊 Live Metrics</div>
+    <h2 class="cp-page-title">Platform <span>Overview</span></h2>
+</div>
+
+<div class="cp-kpi-grid">
+    <div class="cp-kpi-card blue cp-animate cp-animate-delay-1">
+        <span class="cp-kpi-icon">💰</span>
+        <div class="cp-kpi-label">Total Revenue</div>
+        <div class="cp-kpi-value" data-count="{{ stats.total_revenue or '$7.4M' }}">{{ stats.total_revenue or '$7.4M' }}</div>
+        <div class="cp-kpi-sub">Across all markets</div>
+    </div>
+    
+    <div class="cp-kpi-card purple cp-animate cp-animate-delay-2">
+        <span class="cp-kpi-icon">📦</span>
+        <div class="cp-kpi-label">Total Orders</div>
+        <div class="cp-kpi-value">{{ stats.total_orders or '180K' }}</div>
+        <div class="cp-kpi-sub">Jan 2015 – Oct 2017</div>
+    </div>
+    
+    <div class="cp-kpi-card red cp-animate cp-animate-delay-3">
+        <span class="cp-kpi-icon">🚨</span>
+        <div class="cp-kpi-label">Late Delivery Rate</div>
+        <div class="cp-kpi-value">{{ stats.late_rate or '54.8%' }}</div>
+        <div class="cp-kpi-sub"><span class="down">↑ Critical issue</span></div>
+    </div>
+    
+    <div class="cp-kpi-card amber cp-animate cp-animate-delay-4">
+        <span class="cp-kpi-icon">⚠️</span>
+        <div class="cp-kpi-label">Revenue at Risk</div>
+        <div class="cp-kpi-value">{{ stats.revenue_at_risk or '$602K' }}</div>
+        <div class="cp-kpi-sub">High risk orders</div>
+    </div>
+    
+    <div class="cp-kpi-card green cp-animate cp-animate-delay-5">
+        <span class="cp-kpi-icon">👥</span>
+        <div class="cp-kpi-label">Customers</div>
+        <div class="cp-kpi-value">{{ stats.total_customers or '14.3K' }}</div>
+        <div class="cp-kpi-sub">Segmented into 7 groups</div>
+    </div>
+    
+    <div class="cp-kpi-card amber cp-animate cp-animate-delay-5">
+        <span class="cp-kpi-icon">🏆</span>
+        <div class="cp-kpi-label">Champion Customers</div>
+        <div class="cp-kpi-value">{{ stats.champion_pct or '10.8%' }}</div>
+        <div class="cp-kpi-sub">Drive 20% of revenue</div>
+    </div>
+</div>
+
+<div class="cp-divider"></div>
+
+<!-- FEATURE CARDS -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">🚀 Modules</div>
+    <h2 class="cp-page-title">Analytics <span>Modules</span></h2>
+    <p class="cp-page-subtitle">Six powerful modules covering every aspect of supply chain intelligence</p>
+</div>
+
+<div class="cp-feature-grid">
+    <a href="/eda" class="cp-feature-card">
+        <span class="cp-feature-icon">📊</span>
+        <div class="cp-feature-title">EDA Explorer</div>
+        <div class="cp-feature-desc">Explore 180K+ orders interactively. Filter by region, category, date and shipping mode. Dynamic charts update in real-time.</div>
+        <div class="cp-feature-link">Explore data →</div>
+    </a>
+    
+    <a href="/risk" class="cp-feature-card">
+        <span class="cp-feature-icon">🚨</span>
+        <div class="cp-feature-title">Risk Analyzer</div>
+        <div class="cp-feature-desc">Predict delivery risk in real-time using XGBoost (77.5% AUC). Input order details, get instant High/Medium/Low risk score.</div>
+        <div class="cp-feature-link">Analyze risk →</div>
+    </a>
+    
+    <a href="/forecast" class="cp-feature-card">
+        <span class="cp-feature-icon">📈</span>
+        <div class="cp-feature-title">Demand Forecast</div>
+        <div class="cp-feature-desc">90-day demand forecasting powered by Facebook Prophet for top 5 product categories. $2M+ in demand predicted.</div>
+        <div class="cp-feature-link">View forecasts →</div>
+    </a>
+    
+    <a href="/customers" class="cp-feature-card">
+        <span class="cp-feature-icon">👥</span>
+        <div class="cp-feature-title">Customer Intel</div>
+        <div class="cp-feature-desc">RFM segmentation + KMeans clustering of 14,282 customers. Champions, Loyal, At Risk segments with action plans.</div>
+        <div class="cp-feature-link">View segments →</div>
+    </a>
+    
+    <a href="/nlp" class="cp-feature-card">
+        <span class="cp-feature-icon">🔍</span>
+        <div class="cp-feature-title">NLP Insights</div>
+        <div class="cp-feature-desc">Product catalog text intelligence. TF-IDF, LDA topic modeling, wordcloud and cross-sell opportunity finder.</div>
+        <div class="cp-feature-link">View insights →</div>
+    </a>
+    
+    <div class="cp-feature-card pipeline-card" onclick="runPipeline()">
+        <span class="cp-feature-icon">⚡</span>
+        <div class="cp-feature-title">Automated Pipeline</div>
+        <div class="cp-feature-desc">One command rebuilds everything. 6 scripts, 36 charts, 9 Power BI tables, 2 ML models — all in under 10 minutes.</div>
+        <button class="cp-pipeline-btn" id="pipelineBtn">
+            <span class="btn-icon">🚀</span>
+            <span class="btn-text">Run Pipeline</span>
+        </button>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Particle Effect
+function createParticles() {
+    const container = document.getElementById('particles');
+    const particleCount = 50;
+    
+    for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random position
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        
+        // Random animation delay and duration
+        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+        
+        // Random opacity
+        particle.style.opacity = Math.random() * 0.5 + 0.2;
+        
+        container.appendChild(particle);
+    }
+}
+
+// Counter Animation
+function animateCounters() {
+    const counters = document.querySelectorAll('.cp-kpi-value');
+    
+    counters.forEach(counter => {
+        const target = counter.textContent;
+        const numericValue = parseFloat(target.replace(/[^0-9.]/g, ''));
+        
+        if (!isNaN(numericValue)) {
+            let current = 0;
+            const increment = numericValue / 100;
+            const timer = setInterval(() => {
+                current += increment;
+                if (current >= numericValue) {
+                    current = numericValue;
+                    clearInterval(timer);
+                }
+                
+                const prefix = target.match(/^[^0-9]*/)[0];
+                const suffix = target.match(/[^0-9]*$/)[0];
+                
+                if (numericValue >= 1000000) {
+                    counter.textContent = prefix + (current / 1000000).toFixed(1) + 'M' + suffix;
+                } else if (numericValue >= 1000) {
+                    counter.textContent = prefix + (current / 1000).toFixed(0) + 'K' + suffix;
+                } else {
+                    counter.textContent = prefix + current.toFixed(1) + suffix;
+                }
+            }, 20);
+        }
+    });
+}
+
+// Intersection Observer for animations
+function setupScrollAnimations() {
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.style.opacity = '1';
+                entry.target.style.transform = 'translateY(0)';
+            }
+        });
+    }, { threshold: 0.1 });
+    
+    document.querySelectorAll('.cp-feature-card, .cp-kpi-card').forEach(el => {
+        observer.observe(el);
+    });
+}
+
+// Initialize everything
+document.addEventListener('DOMContentLoaded', () => {
+    createParticles();
+    setTimeout(animateCounters, 1000);
+    setupScrollAnimations();
+});
+
+// Pipeline Execution Functions
+function runPipeline() {
+    const btn = document.getElementById('pipelineBtn');
+    const btnIcon = btn.querySelector('.btn-icon');
+    const btnText = btn.querySelector('.btn-text');
+    
+    // Update button state
+    btn.classList.add('running');
+    btn.disabled = true;
+    btnIcon.textContent = '⏳';
+    btnText.textContent = 'Running...';
+    
+    // Create and show progress modal
+    showPipelineModal();
+    
+    // Start pipeline execution
+    const eventSource = new EventSource('/api/pipeline/run');
+    
+    eventSource.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        updatePipelineProgress(data);
+        
+        if (data.type === 'complete') {
+            eventSource.close();
+            completePipeline(true);
+        } else if (data.type === 'error') {
+            eventSource.close();
+            completePipeline(false, data.message);
+        }
+    };
+    
+    eventSource.onerror = function(event) {
+        eventSource.close();
+        completePipeline(false, 'Connection error');
+    };
+}
+
+function showPipelineModal() {
+    const modal = document.createElement('div');
+    modal.className = 'pipeline-modal';
+    modal.id = 'pipelineModal';
+    
+    modal.innerHTML = `
+        <div class="pipeline-modal-content">
+            <h3 style="color: var(--text-primary); margin-bottom: 20px;">🚀 Running Analytics Pipeline</h3>
+            <div class="pipeline-progress">
+                <div class="pipeline-progress-bar" id="progressBar"></div>
+            </div>
+            <div id="progressText" style="color: var(--text-secondary); margin-bottom: 20px;">Initializing...</div>
+            <div class="pipeline-steps" id="pipelineSteps">
+                <div class="pipeline-step">
+                    <div class="step-icon step-pending" id="step1">1</div>
+                    <div>EDA Analysis</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="step-icon step-pending" id="step2">2</div>
+                    <div>Demand Forecasting</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="step-icon step-pending" id="step3">3</div>
+                    <div>Risk Model Training</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="step-icon step-pending" id="step4">4</div>
+                    <div>Customer Segmentation</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="step-icon step-pending" id="step5">5</div>
+                    <div>NLP Analysis</div>
+                </div>
+                <div class="pipeline-step">
+                    <div class="step-icon step-pending" id="step6">6</div>
+                    <div>Power BI Export</div>
+                </div>
+            </div>
+            <button onclick="closePipelineModal()" style="display: none;" id="closeModalBtn" class="cp-btn cp-btn-secondary">Close</button>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+function updatePipelineProgress(data) {
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    
+    switch(data.type) {
+        case 'start':
+            progressText.textContent = `Starting pipeline (${data.total} steps)...`;
+            break;
+            
+        case 'step_start':
+            progressText.textContent = `Step ${data.step}: ${data.name}`;
+            const stepIcon = document.getElementById(`step${data.step}`);
+            if (stepIcon) {
+                stepIcon.className = 'step-icon step-running';
+                stepIcon.textContent = '⏳';
+            }
+            break;
+            
+        case 'step_done':
+            const completedIcon = document.getElementById(`step${data.step}`);
+            if (completedIcon) {
+                if (data.success) {
+                    completedIcon.className = 'step-icon step-success';
+                    completedIcon.textContent = '✓';
+                } else {
+                    completedIcon.className = 'step-icon step-error';
+                    completedIcon.textContent = '✗';
+                }
+            }
+            
+            if (progressBar) {
+                progressBar.style.width = `${data.progress}%`;
+            }
+            
+            if (data.success) {
+                progressText.textContent = `Step ${data.step} completed successfully`;
+            } else {
+                progressText.textContent = `Step ${data.step} failed`;
+            }
+            break;
+            
+        case 'complete':
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Pipeline completed successfully! 🎉';
+            document.getElementById('closeModalBtn').style.display = 'inline-block';
+            break;
+            
+        case 'error':
+            progressText.textContent = `Error: ${data.message}`;
+            document.getElementById('closeModalBtn').style.display = 'inline-block';
+            break;
+    }
+}
+
+function completePipeline(success, errorMessage = null) {
+    const btn = document.getElementById('pipelineBtn');
+    const btnIcon = btn.querySelector('.btn-icon');
+    const btnText = btn.querySelector('.btn-text');
+    
+    btn.classList.remove('running');
+    btn.disabled = false;
+    
+    if (success) {
+        btn.classList.add('success');
+        btnIcon.textContent = '✅';
+        btnText.textContent = 'Completed!';
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+            btn.classList.remove('success');
+            btnIcon.textContent = '🚀';
+            btnText.textContent = 'Run Pipeline';
+        }, 3000);
+        
+    } else {
+        btn.classList.add('error');
+        btnIcon.textContent = '❌';
+        btnText.textContent = 'Failed';
+        
+        // Reset button after 3 seconds
+        setTimeout(() => {
+            btn.classList.remove('error');
+            btnIcon.textContent = '🚀';
+            btnText.textContent = 'Run Pipeline';
+        }, 3000);
+        
+        if (errorMessage) {
+            console.error('Pipeline error:', errorMessage);
+        }
+    }
+}
+
+function closePipelineModal() {
+    const modal = document.getElementById('pipelineModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+</script>
+{% endblock %}

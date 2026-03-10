@@ -1,0 +1,251 @@
+{% extends 'base.html' %}
+
+{% block title %}Map Your Columns{% endblock %}
+
+{% block content %}
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">🗺️ Smart Column Mapping</div>
+    <h2 class="cp-page-title">Map Your <span>Columns</span></h2>
+    <p class="cp-page-subtitle">ChainPulse detected your columns. Confirm the mappings below to continue.</p>
+</div>
+
+<!-- FILE INFO BAR -->
+<div class="cp-card" style="margin-bottom: 24px;">
+    <div style="padding: 16px 24px; display: flex; align-items: center; gap: 24px; font-size: 14px; color: var(--text-secondary);">
+        <div><strong>File:</strong> {{ filename }}</div>
+        <div><strong>Rows:</strong> {{ file_info.rows if file_info else 'Unknown' }}</div>
+        <div><strong>Columns:</strong> {{ csv_columns|length }}</div>
+    </div>
+</div>
+
+<!-- MAPPING TABLE -->
+<div class="cp-card" style="margin-bottom: 24px;">
+    <div style="padding: 24px 24px 16px;">
+        <h3 class="cp-chart-title">Column Mappings</h3>
+        <p class="cp-chart-subtitle">Map your CSV columns to ChainPulse standard format</p>
+    </div>
+    
+    <div style="padding: 0 24px 24px;">
+        <form id="mappingForm">
+            <div class="mapping-table">
+                {% for core_key, core_info in core_columns.items() %}
+                <div class="mapping-row" data-core-key="{{ core_key }}" data-required="{{ core_info.required|lower }}">
+                    <!-- LEFT SIDE: ChainPulse Column -->
+                    <div class="mapping-left">
+                        <div class="mapping-standard-name">{{ core_info.standard_name }}</div>
+                        <div class="mapping-description">{{ core_info.description }}</div>
+                        <div class="mapping-badge">
+                            {% if core_info.required %}
+                                <span class="badge-required">Required</span>
+                            {% else %}
+                                <span class="badge-optional">Optional</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- MIDDLE: Arrow -->
+                    <div class="mapping-arrow">→</div>
+                    
+                    <!-- RIGHT SIDE: User Column Selection -->
+                    <div class="mapping-right">
+                        <select class="mapping-select" name="{{ core_key }}" data-core-key="{{ core_key }}">
+                            <option value="">-- Skip this column --</option>
+                            {% for csv_col in csv_columns %}
+                            <option value="{{ csv_col }}" 
+                                {% if mappings[core_key].suggested == csv_col %}selected{% endif %}>
+                                {{ csv_col }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                        
+                        {% set mapping = mappings[core_key] %}
+                        {% if mapping.matched %}
+                            {% if mapping.confidence > 0.8 %}
+                                <span class="confidence-badge confidence-high">{{ (mapping.confidence * 100)|int }}% match</span>
+                            {% elif mapping.confidence >= 0.5 %}
+                                <span class="confidence-badge confidence-medium">{{ (mapping.confidence * 100)|int }}% match</span>
+                            {% else %}
+                                <span class="confidence-badge confidence-low">No match</span>
+                            {% endif %}
+                        {% else %}
+                            <span class="confidence-badge confidence-low">No match</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- VALIDATION WARNING -->
+<div id="validationWarning" class="cp-card" style="display: none; margin-bottom: 24px; border: 2px solid var(--red); background: var(--red-glow);">
+    <div style="padding: 16px 24px;">
+        <div style="color: var(--red); font-weight: 600; display: flex; align-items: center; gap: 8px;">
+            <span>⚠️</span>
+            <span id="warningText">Please map required columns</span>
+        </div>
+    </div>
+</div>
+
+<!-- ACTION BUTTONS -->
+<div class="cp-card" style="margin-bottom: 24px;">
+    <div style="padding: 24px; display: flex; gap: 16px; justify-content: center;">
+        <a href="/upload" class="cp-btn cp-btn-secondary">
+            ← Back to Upload
+        </a>
+        <button id="confirmButton" class="cp-btn cp-btn-primary">
+            ✅ Confirm Mapping & Run Pipeline
+        </button>
+    </div>
+</div>
+
+<!-- WHAT HAPPENS NEXT -->
+<div class="cp-card">
+    <div style="padding: 24px;">
+        <h3 class="cp-chart-title">What happens next?</h3>
+        <div style="margin-top: 16px; color: var(--text-secondary); line-height: 1.6;">
+            <div style="margin-bottom: 8px;"><strong>1.</strong> Your columns will be renamed to match ChainPulse format</div>
+            <div style="margin-bottom: 8px;"><strong>2.</strong> Data will be validated again</div>
+            <div style="margin-bottom: 8px;"><strong>3.</strong> Pipeline will run automatically</div>
+            <div><strong>4.</strong> All 6 analyses will update</div>
+        </div>
+    </div>
+</div>
+
+<style>
+.mapping-table {
+    display: grid;
+    gap: 16px;
+}
+
+.mapping-row {
+    display: grid;
+    grid-template-columns: 2fr auto 2fr;
+    gap: 24px;
+    align-items: center;
+    padding: 20px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.mapping-row.missing-required {
+    border-color: var(--red);
+    background: var(--red-glow);
+}
+
+.mapping-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.mapping-standard-name {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: 16px;
+}
+
+.mapping-description {
+    font-size: 13px;
+    color: var(--text-secondary);
+}
+
+.mapping-badge {
+    margin-top: 4px;
+}
+
+.badge-required {
+    background: var(--red);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-optional {
+    background: var(--text-muted);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.mapping-arrow {
+    font-size: 20px;
+    color: var(--blue);
+    font-weight: bold;
+}
+
+.mapping-right {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.mapping-select {
+    width: 100%;
+    padding: 12px 16px;
+    background: var(--bg-primary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.mapping-select:focus {
+    outline: none;
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(56,189,248,0.2);
+}
+
+.confidence-badge {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-align: center;
+}
+
+.confidence-high {
+    background: var(--green-glow);
+    color: var(--green);
+    border: 1px solid rgba(16,185,129,0.3);
+}
+
+.confidence-medium {
+    background: var(--amber-glow);
+    color: var(--amber);
+    border: 1px solid rgba(245,158,11,0.3);
+}
+
+.confidence-low {
+    background: var(--bg-primary);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+}
+
+@media (max-width: 768px) {
+    .mapping-row {
+        grid-template-columns: 1fr;
+        gap: 16px;
+        text-align: center;
+    }
+    
+    .mapping-arrow {
+        transform: rotate(90deg);
+    }
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/column_mapping.js') }}"></script>
+{% endblock %}
