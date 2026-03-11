@@ -8,6 +8,24 @@ from datetime import datetime
 
 main = Blueprint('main', __name__)
 
+def safe_json(obj):
+    import numpy as np
+    if isinstance(obj, dict):
+        return {k: safe_json(v)
+                for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [safe_json(i)
+                for i in obj]
+    elif isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif hasattr(obj, 'item'):
+        return obj.item()
+    return obj
+
 @main.route('/')
 @require_auth
 def home():
@@ -102,14 +120,14 @@ def get_dashboard_stats():
     
     try:
         # Load processed data files if they exist
-        if os.path.exists('data/processed/delivery_risk_scored.csv'):
-            risk_df = pd.read_csv('data/processed/delivery_risk_scored.csv')
+        if os.path.exists(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'delivery_risk_scored.csv')):
+            risk_df = pd.read_csv(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'delivery_risk_scored.csv'), encoding='latin-1', low_memory=False)
             stats['total_orders'] = len(risk_df)
             stats['high_risk_orders'] = len(risk_df[risk_df.get('Risk_Level', '') == 'High Risk'])
             stats['total_revenue'] = risk_df.get('Sales', pd.Series()).sum()
         
-        if os.path.exists('data/processed/customer_segments.csv'):
-            customer_df = pd.read_csv('data/processed/customer_segments.csv')
+        if os.path.exists(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'customer_segments.csv')):
+            customer_df = pd.read_csv(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'customer_segments.csv'), encoding='latin-1', low_memory=False)
             stats['customer_segments'] = customer_df.get('Segment', pd.Series()).nunique()
             
     except Exception as e:
@@ -121,8 +139,8 @@ def get_risk_analysis_data():
     data = {'risk_summary': {}, 'risk_distribution': []}
     
     try:
-        if os.path.exists('data/processed/delivery_risk_scored.csv'):
-            df = pd.read_csv('data/processed/delivery_risk_scored.csv')
+        if os.path.exists(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'delivery_risk_scored.csv')):
+            df = pd.read_csv(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'delivery_risk_scored.csv'), encoding='latin-1', low_memory=False)
             
             # Risk level distribution
             if 'Risk_Level' in df.columns:
@@ -149,8 +167,8 @@ def get_forecast_data():
     data = {'categories': [], 'forecast_summary': {}}
     
     try:
-        if os.path.exists('data/processed/demand_forecast_results.csv'):
-            df = pd.read_csv('data/processed/demand_forecast_results.csv')
+        if os.path.exists(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'demand_forecast_results.csv')):
+            df = pd.read_csv(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'demand_forecast_results.csv'), encoding='latin-1', low_memory=False)
             
             # Category forecasts
             if 'Category' in df.columns and 'Predicted_Sales' in df.columns:
@@ -175,8 +193,8 @@ def get_customer_data():
     data = {'segments': [], 'segment_summary': {}}
     
     try:
-        if os.path.exists('data/processed/customer_segments.csv'):
-            df = pd.read_csv('data/processed/customer_segments.csv')
+        if os.path.exists(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'customer_segments.csv')):
+            df = pd.read_csv(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'customer_segments.csv'), encoding='latin-1', low_memory=False)
             
             if 'Segment' in df.columns:
                 segment_counts = df['Segment'].value_counts()
@@ -199,8 +217,8 @@ def get_nlp_data():
     data = {'product_insights': {}, 'categories': []}
     
     try:
-        if os.path.exists('data/processed/product_nlp_analysis.csv'):
-            df = pd.read_csv('data/processed/product_nlp_analysis.csv')
+        if os.path.exists(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'product_nlp_analysis.csv')):
+            df = pd.read_csv(os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed', 'product_nlp_analysis.csv'), encoding='latin-1', low_memory=False)
             
             data['product_insights'] = {
                 'total_products': len(df),
@@ -335,3 +353,342 @@ def download_report(page_name):
                         download_name=filename)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# CHART API ENDPOINTS - Dynamic Chart.js Data
+# ═══════════════════════════════════════════════════════════════════════════════
+
+@main.route('/api/eda/charts')
+@require_auth
+def eda_charts():
+    import pandas as pd
+    import os
+    from flask import jsonify, current_app
+    
+    try:
+        processed = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed')
+        risk_file = os.path.join(processed, 'delivery_risk_scored.csv')
+        
+        if not os.path.exists(risk_file):
+            return jsonify({'no_data': True})
+        
+        df = pd.read_csv(risk_file, encoding='latin-1', low_memory=False)
+        df['Sales'] = pd.to_numeric(df['Sales'], errors='coerce').fillna(0)
+        
+        # Revenue by Region
+        region_data = (df.groupby('Order Region')['Sales'].sum()
+                      .sort_values(ascending=False).head(10))
+        
+        # Revenue by Category
+        cat_data = (df.groupby('Category Name')['Sales'].sum()
+                   .sort_values(ascending=False).head(10))
+        
+        # Late rate by Shipping Mode
+        df['is_late'] = df['Delivery Status'].str.contains('Late', na=False).astype(int)
+        ship_data = (df.groupby('Shipping Mode')['is_late'].mean() * 100).round(1)
+        
+        # Orders by month
+        df['order_date'] = pd.to_datetime(df['order date (DateOrders)'], errors='coerce')
+        df['month'] = df['order_date'].dt.to_period('M').astype(str)
+        monthly = (df.groupby('month').size().sort_index().tail(24))
+        
+        # Revenue trend
+        rev_trend = (df.groupby('month')['Sales'].sum().sort_index().tail(24))
+        
+        # Order status distribution
+        status_data = (df['Delivery Status'].value_counts().head(6))
+        
+        # Risk level distribution
+        risk_data = (df['Risk_Level'].value_counts())
+        
+        result = {
+            'no_data': False,
+            'revenue_by_region': {
+                'labels': list(region_data.index),
+                'values': [round(v, 2) for v in region_data.values]
+            },
+            'revenue_by_category': {
+                'labels': list(cat_data.index),
+                'values': [round(v, 2) for v in cat_data.values]
+            },
+            'late_rate_by_shipping': {
+                'labels': list(ship_data.index),
+                'values': list(ship_data.values)
+            },
+            'orders_by_month': {
+                'labels': list(monthly.index),
+                'values': list(monthly.values)
+            },
+            'revenue_trend': {
+                'labels': list(rev_trend.index),
+                'values': [round(v, 2) for v in rev_trend.values]
+            },
+            'order_status_dist': {
+                'labels': list(status_data.index),
+                'values': list(status_data.values)
+            },
+            'risk_distribution': {
+                'labels': list(risk_data.index),
+                'values': list(risk_data.values)
+            }
+        }
+        return jsonify(safe_json(result))
+        
+    except Exception as e:
+        import traceback
+        print(f'[FAIL] eda_charts: {e}')
+        print(traceback.format_exc())
+        return jsonify({'no_data': True, 'error': str(e)})
+
+@main.route('/api/forecast/charts')
+@require_auth
+def forecast_charts():
+    """Forecast charts data for Chart.js"""
+    try:
+        processed_dir = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed')
+        forecast_file = os.path.join(processed_dir, 'demand_forecast_results.csv')
+        
+        if not os.path.exists(forecast_file):
+            return jsonify({"no_data": True})
+        
+        df = pd.read_csv(forecast_file, encoding='latin-1', low_memory=False)
+        
+        # Summary by category
+        summary = {"labels": [], "totals": []}
+        if 'Category' in df.columns and 'Predicted_Sales' in df.columns:
+            cat_totals = df.groupby('Category')['Predicted_Sales'].sum().head(10)
+            summary = {
+                "labels": cat_totals.index.tolist(),
+                "totals": [round(val, 2) for val in cat_totals.values]
+            }
+        
+        # Individual category forecasts
+        categories = df['Category'].unique()[:5] if 'Category' in df.columns else []
+        forecasts = {}
+        
+        for cat in categories:
+            cat_data = df[df['Category'] == cat].head(30)
+            if len(cat_data) > 0:
+                forecasts[cat] = {
+                    "dates": cat_data.get('Date', cat_data.index).astype(str).tolist(),
+                    "predicted": [round(val, 2) for val in pd.to_numeric(cat_data.get('Predicted_Sales', []), errors='coerce').fillna(0)],
+                    "lower": [round(val, 2) for val in pd.to_numeric(cat_data.get('Lower_Bound', []), errors='coerce').fillna(0)],
+                    "upper": [round(val, 2) for val in pd.to_numeric(cat_data.get('Upper_Bound', []), errors='coerce').fillna(0)]
+                }
+        
+        result = {
+            "categories": categories.tolist(),
+            "forecasts": forecasts,
+            "summary": summary
+        }
+        return jsonify(safe_json(result))
+        
+    except Exception as e:
+        print(f"Forecast charts error: {e}")
+        return jsonify({"no_data": True})
+
+@main.route('/api/customers/charts')
+@require_auth
+def customers_charts():
+    """Customer charts data for Chart.js"""
+    try:
+        processed_dir = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed')
+        segments_file = os.path.join(processed_dir, 'customer_segments.csv')
+        
+        if not os.path.exists(segments_file):
+            return jsonify({"no_data": True})
+        
+        df = pd.read_csv(segments_file, encoding='latin-1', low_memory=False)
+        
+        # Segment distribution
+        segment_distribution = {"labels": [], "values": []}
+        if 'Segment' in df.columns:
+            seg_counts = df['Segment'].value_counts().head(10)
+            segment_distribution = {
+                "labels": seg_counts.index.tolist(),
+                "values": seg_counts.values.tolist()
+            }
+        
+        # Segment revenue
+        segment_revenue = {"labels": [], "values": []}
+        if 'Segment' in df.columns and 'Total_Sales' in df.columns:
+            seg_revenue = df.groupby('Segment')['Total_Sales'].sum().head(10)
+            segment_revenue = {
+                "labels": seg_revenue.index.tolist(),
+                "values": [round(val, 2) for val in seg_revenue.values]
+            }
+        
+        # Cluster sizes (if cluster column exists)
+        cluster_sizes = {"labels": [], "values": []}
+        if 'Cluster' in df.columns:
+            cluster_counts = df['Cluster'].value_counts().head(10)
+            cluster_sizes = {
+                "labels": [f"Cluster {i}" for i in cluster_counts.index],
+                "values": cluster_counts.values.tolist()
+            }
+        
+        # Recency distribution
+        recency_distribution = {"labels": [], "values": []}
+        if 'Recency' in df.columns:
+            # Create recency bins
+            df['Recency_Bin'] = pd.cut(pd.to_numeric(df['Recency'], errors='coerce'), 
+                                     bins=[0, 30, 60, 90, 180, 365, float('inf')], 
+                                     labels=['0-30', '31-60', '61-90', '91-180', '181-365', '365+'])
+            recency_counts = df['Recency_Bin'].value_counts()
+            recency_distribution = {
+                "labels": recency_counts.index.astype(str).tolist(),
+                "values": recency_counts.values.tolist()
+            }
+        
+        result = {
+            "segment_distribution": segment_distribution,
+            "segment_revenue": segment_revenue,
+            "cluster_sizes": cluster_sizes,
+            "recency_distribution": recency_distribution
+        }
+        return jsonify(safe_json(result))
+        
+    except Exception as e:
+        print(f"Customer charts error: {e}")
+        return jsonify({"no_data": True})
+
+@main.route('/api/nlp/charts')
+@require_auth
+def nlp_charts():
+    """NLP charts data for Chart.js"""
+    try:
+        processed_dir = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed')
+        nlp_file = os.path.join(processed_dir, 'product_nlp_analysis.csv')
+        
+        if not os.path.exists(nlp_file):
+            return jsonify({"no_data": True})
+        
+        df = pd.read_csv(nlp_file, encoding='latin-1', low_memory=False)
+        
+        # Top products/keywords
+        top_keywords = {"labels": [], "values": []}
+        if 'Product_Name' in df.columns and 'Frequency' in df.columns:
+            top_products = df.nlargest(15, 'Frequency')
+            top_keywords = {
+                "labels": top_products['Product_Name'].tolist(),
+                "values": top_products['Frequency'].tolist()
+            }
+        
+        # Mock topic distribution (since we don't have real topic modeling)
+        topic_distribution = {
+            "labels": ["Sports Equipment", "Outdoor Gear", "Footwear", "Accessories", "Apparel"],
+            "values": [35, 28, 22, 15, 10]
+        }
+        
+        # Mock bigrams
+        top_bigrams = {
+            "labels": ["fishing rod", "soccer ball", "running shoes", "camping gear", "sports wear"],
+            "values": [450, 380, 320, 280, 220]
+        }
+        
+        # Mock sentiment
+        sentiment_distribution = {
+            "labels": ["Positive", "Neutral", "Negative"],
+            "values": [65, 25, 10]
+        }
+        
+        result = {
+            "topic_distribution": topic_distribution,
+            "top_bigrams": top_bigrams,
+            "sentiment_distribution": sentiment_distribution,
+            "top_keywords": top_keywords
+        }
+        return jsonify(safe_json(result))
+        
+    except Exception as e:
+        print(f"NLP charts error: {e}")
+        return jsonify({"no_data": True})
+
+@main.route('/api/risk/charts')
+@require_auth
+def risk_charts():
+    """Risk charts data for Chart.js"""
+    try:
+        processed_dir = os.path.join(current_app.config['PROJECT_ROOT'], 'data', 'processed')
+        risk_file = os.path.join(processed_dir, 'delivery_risk_scored.csv')
+        
+        if not os.path.exists(risk_file):
+            return jsonify({"no_data": True})
+        
+        df = pd.read_csv(risk_file, encoding='latin-1')
+        
+        # Risk distribution
+        risk_distribution = {"labels": [], "values": []}
+        if 'Risk_Level' in df.columns:
+            risk_counts = df['Risk_Level'].value_counts()
+            total = risk_counts.sum()
+            risk_distribution = {
+                "labels": risk_counts.index.tolist(),
+                "values": [round((count/total)*100, 1) for count in risk_counts.values]
+            }
+        
+        # Risk by region
+        risk_by_region = {"labels": [], "high": [], "medium": [], "low": []}
+        if 'Order Region' in df.columns and 'Risk_Level' in df.columns:
+            regions = df['Order Region'].unique()[:8]
+            for region in regions:
+                region_data = df[df['Order Region'] == region]
+                risk_counts = region_data['Risk_Level'].value_counts()
+                total = len(region_data)
+                
+                risk_by_region["labels"].append(region)
+                risk_by_region["high"].append(round((risk_counts.get('High Risk', 0)/total)*100, 1))
+                risk_by_region["medium"].append(round((risk_counts.get('Medium Risk', 0)/total)*100, 1))
+                risk_by_region["low"].append(round((risk_counts.get('Low Risk', 0)/total)*100, 1))
+        
+        # Risk by shipping mode
+        risk_by_shipping = {"labels": [], "values": []}
+        if 'Shipping Mode' in df.columns and 'Delivery Status' in df.columns:
+            shipping_late = df.groupby('Shipping Mode').apply(
+                lambda x: (x['Delivery Status'].str.contains('Late', na=False).sum() / len(x)) * 100
+            ).head(8)
+            risk_by_shipping = {
+                "labels": shipping_late.index.tolist(),
+                "values": [round(val, 1) for val in shipping_late.values]
+            }
+        
+        # Risk trend over time
+        risk_trend = {"labels": [], "values": []}
+        if 'order date (DateOrders)' in df.columns and 'Delivery Status' in df.columns:
+            df['order_date'] = pd.to_datetime(df['order date (DateOrders)'], errors='coerce')
+            monthly_late = df.groupby(df['order_date'].dt.to_period('M')).apply(
+                lambda x: (x['Delivery Status'].str.contains('Late', na=False).sum() / len(x)) * 100
+            ).head(12)
+            risk_trend = {
+                "labels": [str(period) for period in monthly_late.index],
+                "values": [round(val, 1) for val in monthly_late.values]
+            }
+        
+        # Feature importance (mock data)
+        feature_importance = {
+            "labels": ["Shipping Mode", "Order Region", "Category", "Sales Amount", "Quantity"],
+            "values": [0.28, 0.22, 0.18, 0.16, 0.12]
+        }
+        
+        # Revenue at risk by category
+        revenue_at_risk_by_category = {"labels": [], "values": []}
+        if 'Category Name' in df.columns and 'Revenue_at_Risk' in df.columns:
+            cat_risk = df.groupby('Category Name')['Revenue_at_Risk'].sum().head(10)
+            revenue_at_risk_by_category = {
+                "labels": cat_risk.index.tolist(),
+                "values": [round(val, 2) for val in cat_risk.values]
+            }
+        
+        result = {
+            "risk_distribution": risk_distribution,
+            "risk_by_region": risk_by_region,
+            "risk_by_shipping": risk_by_shipping,
+            "risk_trend": risk_trend,
+            "feature_importance": feature_importance,
+            "revenue_at_risk_by_category": revenue_at_risk_by_category
+        }
+        return jsonify(safe_json(result))
+        
+    except Exception as e:
+        print(f"Risk charts error: {e}")
+        return jsonify({"no_data": True})

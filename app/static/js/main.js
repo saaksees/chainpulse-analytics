@@ -26,6 +26,52 @@ const CP_COLORS = {
 
 const CP_PALETTE = Object.values(CP_COLORS);
 
+// Chart.js color constants (for compatibility with chart JS files)
+const CHART_COLORS = {
+    blue: '#38BDF8',
+    purple: '#7C3AED',
+    green: '#10B981',
+    red: '#EF4444',
+    orange: '#F59E0B',
+    teal: '#06B6D4',
+    pink: '#EC4899',
+    yellow: '#F59E0B'
+};
+
+// Chart.js default options
+const CHART_DEFAULTS = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+        legend: {
+            position: 'bottom',
+            labels: { 
+                color: '#94A3B8',
+                boxWidth: 12,
+                padding: 15
+            }
+        },
+        tooltip: {
+            backgroundColor: '#111827',
+            borderColor: '#1E293B',
+            borderWidth: 1,
+            titleColor: '#F1F5F9',
+            bodyColor: '#94A3B8',
+            padding: 12
+        }
+    },
+    scales: {
+        x: {
+            ticks: { color: '#94A3B8' },
+            grid: { color: '#1E293B' }
+        },
+        y: {
+            ticks: { color: '#94A3B8' },
+            grid: { color: '#1E293B' }
+        }
+    }
+};
+
 // Fetch helper with loading state
 async function cpFetch(url, loadingEl) {
     try {

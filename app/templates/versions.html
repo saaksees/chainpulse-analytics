@@ -21,27 +21,27 @@
 </div>
 
 <!-- ═══ ACTIVE VERSION BANNER ═══ -->
-{% if active %}
+{% if active_version %}
 <div style="background:linear-gradient(135deg,#052e16,#064e3b);border:1px solid #10b981;border-radius:12px;padding:20px 24px;margin-bottom:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px">
     <div style="display:flex;align-items:center;gap:16px">
         <div style="background:#10b981;border-radius:50%;width:44px;height:44px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">✅</div>
         <div>
             <div style="color:#10b981;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Currently Active Dataset</div>
-            <div style="color:#F1F5F9;font-size:18px;font-weight:700">{{ active.version_number }} — {{ active.filename }}</div>
-            <div style="color:#94A3B8;font-size:13px;margin-top:4px">Uploaded by {{ active.uploaded_by }} · {{ active.uploaded_at }}</div>
+            <div style="color:#F1F5F9;font-size:18px;font-weight:700">{{ active_version.get('version_number', 'v?') }} — {{ active_version.get('filename', 'Unknown') }}</div>
+            <div style="color:#94A3B8;font-size:13px;margin-top:4px">Uploaded by {{ active_version.get('uploaded_by', 'Unknown') }} · {{ active_version.get('uploaded_at', 'N/A') }}</div>
         </div>
     </div>
     <div style="display:flex;gap:24px;flex-wrap:wrap">
         <div style="text-align:center">
-            <div style="color:#10b981;font-size:20px;font-weight:700">{{ "{:,}".format(active.total_rows) }}</div>
+            <div style="color:#10b981;font-size:20px;font-weight:700">{{ "{:,}".format(active_version.get('total_rows', 0)) }}</div>
             <div style="color:#94A3B8;font-size:12px">Records</div>
         </div>
         <div style="text-align:center">
-            <div style="color:#10b981;font-size:20px;font-weight:700">${{ "%.1fM" | format(active.total_revenue/1000000) }}</div>
+            <div style="color:#10b981;font-size:20px;font-weight:700">${{ "%.1fM" | format((active_version.get('revenue', 0))/1000000) }}</div>
             <div style="color:#94A3B8;font-size:12px">Revenue</div>
         </div>
         <div style="text-align:center">
-            <div style="color:#10b981;font-size:20px;font-weight:700">{{ active.late_rate }}%</div>
+            <div style="color:#10b981;font-size:20px;font-weight:700">{{ active_version.get('late_rate', 0) }}%</div>
             <div style="color:#94A3B8;font-size:12px">Late Rate</div>
         </div>
     </div>
@@ -73,9 +73,9 @@
 {% if versions %}
 <div style="display:flex;flex-direction:column;gap:16px">
     {% for v in versions %}
-    <div class="cp-card" style="border:1px solid{% if v.is_active %}#10b981{% else %}#1E293B{% endif %};transition:all 0.2s;position:relative" id="version-card-{{ v.id }}">
+    <div class="cp-card" style="border:1px solid{% if v.get('is_active', False) %}#10b981{% else %}#1E293B{% endif %};transition:all 0.2s;position:relative" id="version-card-{{ v.get('id', '') }}">
         <!-- Active ribbon -->
-        {% if v.is_active %}
+        {% if v.get('is_active', False) %}
         <div style="position:absolute;top:16px;right:16px">
             <span style="background:#052e16;color:#10b981;border:1px solid #10b981;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600">✅ ACTIVE</span>
         </div>
@@ -84,44 +84,44 @@
         <div style="display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap">
             <!-- Version badge -->
             <div style="background:#1E293B;border-radius:10px;padding:12px 16px;text-align:center;min-width:70px;flex-shrink:0">
-                <div style="color:#38BDF8;font-size:22px;font-weight:800">{{ v.version_number }}</div>
+                <div style="color:#38BDF8;font-size:22px;font-weight:800">{{ v.get('version_number', 'v?') }}</div>
                 <div style="color:#475569;font-size:11px;margin-top:2px">VERSION</div>
             </div>
             
             <!-- Version details -->
             <div style="flex:1;min-width:200px">
-                <div style="color:#F1F5F9;font-size:16px;font-weight:600;margin-bottom:6px">{{ v.filename }}</div>
+                <div style="color:#F1F5F9;font-size:16px;font-weight:600;margin-bottom:6px">{{ v.get('filename', 'Unknown') }}</div>
                 <div style="color:#94A3B8;font-size:13px;margin-bottom:12px">
-                    Uploaded by <span style="color:#38BDF8">{{ v.uploaded_by }}</span> · {{ v.uploaded_at }}
+                    Uploaded by <span style="color:#38BDF8">{{ v.get('uploaded_by', 'Unknown') }}</span> · {{ v.get('uploaded_at', 'N/A') }}
                 </div>
                 
                 <!-- Stats pills -->
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
-                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">📦 {{ "{:,}".format(v.total_rows) }} rows</span>
-                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">💰 ${{ "%.1fM"|format(v.total_revenue/1000000 if v.total_revenue > 0 else 0) }}</span>
-                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">⏰ {{ v.late_rate }}% late</span>
-                    {% if v.date_range %}
-                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">📅 {{ v.date_range }}</span>
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">📦 {{ "{:,}".format(v.get('total_rows', 0)) }} rows</span>
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">💰 ${{ "%.1fM"|format((v.get('revenue', 0))/1000000) }}</span>
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">⏰ {{ v.get('late_rate', 0) }}% late</span>
+                    {% if v.get('date_range', '') %}
+                    <span style="background:#1E293B;color:#94A3B8;padding:4px 12px;border-radius:6px;font-size:12px">📅 {{ v.get('date_range', 'N/A') }}</span>
                     {% endif %}
                 </div>
             </div>
             
             <!-- Action buttons -->
             <div style="display:flex;flex-direction:column;gap:8px;min-width:180px">
-                {% if v.is_active %}
+                {% if v.get('is_active', False) %}
                 <button disabled style="background:#052e16;color:#10b981;border:1px solid #10b981;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:not-allowed;width:100%">
                     ✅ Currently Active
                 </button>
                 {% else %}
-                <button onclick="switchVersion({{ v.id }}, '{{ v.version_number }}', '{{ v.filename }}')" 
+                <button onclick="switchVersion({{ v.get('id', '') }}, '{{ v.get('version_number', '') }}', '{{ v.get('filename', '') }}')" 
                         style="background:#38BDF8;color:#0A0E1A;border:none;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:700;cursor:pointer;width:100%;transition:opacity 0.2s"
                         onmouseover="this.style.opacity='0.85'"
                         onmouseout="this.style.opacity='1'"
-                        id="switch-btn-{{ v.id }}">
+                        id="switch-btn-{{ v.get('id', '') }}">
                     🔄 Switch to This
                 </button>
-                {% if active %}
-                <button onclick="compareVersion({{ v.id }}, '{{ v.version_number }}', {{ active.id }}, '{{ active.version_number }}')"
+                {% if active_version %}
+                <button onclick="compareVersion({{ v.get('id', '') }}, '{{ v.get('version_number', '') }}', {{ active_version.get('id', '') if active_version else '' }}, '{{ active_version.get('version_number', '') if active_version else '' }}')"
                         style="background:transparent;color:#818CF8;border:1px solid #818CF8;border-radius:8px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;width:100%;transition:all 0.2s"
                         onmouseover="this.style.background='#818CF820'"
                         onmouseout="this.style.background='transparent'">

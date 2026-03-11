@@ -97,6 +97,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 showProfileSummary(data.profile);
                 break;
                 
+            case 'warning':
+                // Show yellow warning bar
+                // NOT a red failure
+                showWarning(data.message);
+                break;
+                
+            case 'version_saved':
+                // Show green success banner
+                showVersionSaved(data.version, data.rows, data.revenue);
+                break;
+                
             case 'complete':
                 if (data.auto_report) {
                     showAutoMLReport(data.auto_report);
@@ -228,5 +239,58 @@ document.addEventListener('DOMContentLoaded', function() {
         `;
         completionMessage.style.display = 'block';
         completionMessage.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function showWarning(message) {
+        const bar = document.createElement('div');
+        bar.style.cssText = `
+            background: #78350F;
+            border: 1px solid #F59E0B;
+            color: #FCD34D;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 14px;
+        `;
+        bar.innerHTML = '[WARN] ' + message;
+        
+        // Find a suitable container or create one
+        let logContainer = document.getElementById('pipeline-log');
+        if (!logContainer) {
+            logContainer = document.createElement('div');
+            logContainer.id = 'pipeline-log';
+            logContainer.style.cssText = 'margin-top: 16px;';
+            document.querySelector('.pipeline-steps').appendChild(logContainer);
+        }
+        logContainer.appendChild(bar);
+    }
+
+    function showVersionSaved(version, rows, revenue) {
+        const bar = document.createElement('div');
+        bar.style.cssText = `
+            background: #052e16;
+            border: 1px solid #34D399;
+            color: #34D399;
+            padding: 12px 20px;
+            border-radius: 8px;
+            margin: 12px 0;
+            font-size: 14px;
+        `;
+        bar.innerHTML = '[OK] Version ' + version + 
+                       ' saved — ' + 
+                       rows.toLocaleString() + 
+                       ' rows, $' + 
+                       revenue.toLocaleString() + 
+                       ' revenue';
+        
+        // Find a suitable container or create one
+        let logContainer = document.getElementById('pipeline-log');
+        if (!logContainer) {
+            logContainer = document.createElement('div');
+            logContainer.id = 'pipeline-log';
+            logContainer.style.cssText = 'margin-top: 16px;';
+            document.querySelector('.pipeline-steps').appendChild(logContainer);
+        }
+        logContainer.appendChild(bar);
     }
 });

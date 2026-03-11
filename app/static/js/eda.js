@@ -1,62 +1,218 @@
-// ChainPulse — eda.js
-/**
- * EDA Dashboard JavaScript
- * Interactive functionality for exploratory data analysis
- */
+// EDA Dashboard - Dynamic Chart.js Implementation
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('EDA Dashboard loaded');
-    
-    // Initialize EDA-specific functionality
-    initChartInteractions();
-    initDataFilters();
-});
-
-function initChartInteractions() {
-    // Add click handlers for chart images to show full-screen view
-    const chartImages = document.querySelectorAll('.chart-image');
-    
-    chartImages.forEach(image => {
-        image.addEventListener('click', function() {
-            showFullScreenChart(this);
-        });
+async function loadEDACharts() {
+    try {
+        const res = await fetch('/api/eda/charts');
+        const data = await res.json();
         
-        // Add hover effects
-        image.addEventListener('mouseenter', function() {
-            this.style.transform = 'scale(1.02)';
-            this.style.transition = 'transform 0.2s ease';
-        });
-        
-        image.addEventListener('mouseleave', function() {
-            this.style.transform = 'scale(1)';
-        });
-    });
-}
-
-function initDataFilters() {
-    // Add any filtering functionality here
-    console.log('Data filters initialized');
-}
-
-function showFullScreenChart(imageElement) {
-    // Create modal overlay
-    const modal = document.createElement('div');
-    modal.className = 'fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50';
-    modal.innerHTML = `
-        <div class="max-w-6xl max-h-full p-4">
-            <img src="${imageElement.src}" alt="${imageElement.alt}" class="max-w-full max-h-full object-contain">
-            <button class="absolute top-4 right-4 text-white text-2xl hover:text-gray-300" onclick="this.parentElement.parentElement.remove()">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-    `;
-    
-    document.body.appendChild(modal);
-    
-    // Close on click outside
-    modal.addEventListener('click', function(e) {
-        if (e.target === modal) {
-            modal.remove();
+        if (data.no_data) {
+            showNoDataMessage();
+            return;
         }
+
+        // Revenue Trend Line Chart
+        if (document.getElementById('revenueTrendChart')) {
+            new Chart(document.getElementById('revenueTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: data.revenue_trend.labels,
+                    datasets: [{
+                        label: 'Revenue',
+                        data: data.revenue_trend.values,
+                        borderColor: CHART_COLORS.blue,
+                        backgroundColor: 'rgba(56,189,248,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...CHART_DEFAULTS,
+                    plugins: {
+                        ...CHART_DEFAULTS.plugins,
+                        title: {
+                            display: true,
+                            text: 'Revenue Trend',
+                            color: '#E2E8F0'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Region Bar Chart
+        if (document.getElementById('regionChart')) {
+            new Chart(document.getElementById('regionChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.revenue_by_region.labels,
+                    datasets: [{
+                        label: 'Revenue by Region',
+                        data: data.revenue_by_region.values,
+                        backgroundColor: [
+                            CHART_COLORS.blue,
+                            CHART_COLORS.purple,
+                            CHART_COLORS.green,
+                            CHART_COLORS.orange,
+                            CHART_COLORS.pink,
+                            CHART_COLORS.teal,
+                            CHART_COLORS.yellow,
+                            CHART_COLORS.red
+                        ]
+                    }]
+                },
+                options: {
+                    ...CHART_DEFAULTS,
+                    plugins: {
+                        ...CHART_DEFAULTS.plugins,
+                        title: {
+                            display: true,
+                            text: 'Revenue by Region',
+                            color: '#E2E8F0'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Category Horizontal Bar
+        if (document.getElementById('categoryChart')) {
+            new Chart(document.getElementById('categoryChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.revenue_by_category.labels,
+                    datasets: [{
+                        label: 'Revenue by Category',
+                        data: data.revenue_by_category.values,
+                        backgroundColor: CHART_COLORS.purple
+                    }]
+                },
+                options: {
+                    ...CHART_DEFAULTS,
+                    indexAxis: 'y',
+                    plugins: {
+                        ...CHART_DEFAULTS.plugins,
+                        title: {
+                            display: true,
+                            text: 'Revenue by Category',
+                            color: '#E2E8F0'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Late Rate Bar Chart
+        if (document.getElementById('lateRateChart')) {
+            new Chart(document.getElementById('lateRateChart'), {
+                type: 'bar',
+                data: {
+                    labels: data.late_rate_by_shipping.labels,
+                    datasets: [{
+                        label: 'Late Rate %',
+                        data: data.late_rate_by_shipping.values,
+                        backgroundColor: CHART_COLORS.red
+                    }]
+                },
+                options: {
+                    ...CHART_DEFAULTS,
+                    plugins: {
+                        ...CHART_DEFAULTS.plugins,
+                        title: {
+                            display: true,
+                            text: 'Late Rate by Shipping Mode',
+                            color: '#E2E8F0'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Orders by Month Line Chart
+        if (document.getElementById('ordersMonthChart')) {
+            new Chart(document.getElementById('ordersMonthChart'), {
+                type: 'line',
+                data: {
+                    labels: data.orders_by_month.labels,
+                    datasets: [{
+                        label: 'Orders per Month',
+                        data: data.orders_by_month.values,
+                        borderColor: CHART_COLORS.green,
+                        backgroundColor: 'rgba(52,211,153,0.1)',
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    ...CHART_DEFAULTS,
+                    plugins: {
+                        ...CHART_DEFAULTS.plugins,
+                        title: {
+                            display: true,
+                            text: 'Orders by Month',
+                            color: '#E2E8F0'
+                        }
+                    }
+                }
+            });
+        }
+
+        // Order Status Doughnut
+        if (document.getElementById('orderStatusChart')) {
+            new Chart(document.getElementById('orderStatusChart'), {
+                type: 'doughnut',
+                data: {
+                    labels: data.order_status_dist.labels,
+                    datasets: [{
+                        data: data.order_status_dist.values,
+                        backgroundColor: [
+                            CHART_COLORS.red,
+                            CHART_COLORS.green,
+                            CHART_COLORS.yellow,
+                            CHART_COLORS.blue,
+                            CHART_COLORS.purple
+                        ]
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94A3B8' }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Order Status Distribution',
+                            color: '#E2E8F0'
+                        }
+                    }
+                }
+            });
+        }
+
+    } catch (err) {
+        console.error('EDA charts error:', err);
+        showNoDataMessage();
+    }
+}
+
+function showNoDataMessage() {
+    document.querySelectorAll('.chart-container').forEach(el => {
+        el.innerHTML = '<div class="no-data">Run pipeline to generate charts</div>';
     });
+}
+
+// Load charts when page loads
+document.addEventListener('DOMContentLoaded', loadEDACharts);
+
+// Export functionality (placeholder)
+function exportChart(chartName) {
+    console.log(`Exporting ${chartName} chart...`);
+    // TODO: Implement chart export functionality
+}
+
+// Refresh charts function
+function refreshCharts() {
+    loadEDACharts();
 }

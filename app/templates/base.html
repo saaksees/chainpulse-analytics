@@ -18,6 +18,27 @@
       --border: #1E293B;
       --blue: #38BDF8;
       --blue-glow: rgba(56,189,248,0.15);
+      
+    /* Chart Container Styles */
+    .chart-container {
+      position: relative;
+      background: #0F172A;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 24px;
+      min-height: 320px;
+    }
+    
+    .no-data {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 200px;
+      color: #475569;
+      font-size: 14px;
+      border: 1px dashed #1E293B;
+      border-radius: 8px;
+    }
       --purple: #7C3AED;
       --green: #10B981;
       --red: #EF4444;
@@ -793,10 +814,12 @@
                 <span class="cp-nav-icon">📁</span>
                 <span class="cp-nav-label">Upload Data</span>
             </a>
+            <!-- VERSION HISTORY TEMPORARILY HIDDEN
             <a href="{{ url_for('upload.versions_page') }}" class="cp-nav-item {% if request.endpoint == 'upload.versions_page' %}active{% endif %}">
                 <span class="cp-nav-icon">📚</span>
                 <span class="cp-nav-label">Version History</span>
             </a>
+            -->
             <a href="{{ url_for('upload.health') }}" class="cp-nav-item {% if request.endpoint == 'upload.health' %}active{% endif %}">
                 <span class="cp-nav-icon">🏥</span>
                 <span class="cp-nav-label">System Health</span>
@@ -887,6 +910,41 @@
             }
         });
     </script>
+    
+    <script>
+    // Chart.js Global Defaults
+    const CHART_DEFAULTS = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                labels: { color: '#94A3B8' }
+            }
+        },
+        scales: {
+            x: {
+                ticks: { color: '#64748B' },
+                grid: { color: '#1E293B' }
+            },
+            y: {
+                ticks: { color: '#64748B' },
+                grid: { color: '#1E293B' }
+            }
+        }
+    };
+    
+    const CHART_COLORS = {
+        blue: '#38BDF8',
+        purple: '#818CF8',
+        green: '#34D399',
+        orange: '#FB923C',
+        red: '#F87171',
+        yellow: '#FBBF24',
+        pink: '#F472B6',
+        teal: '#2DD4BF'
+    };
+    </script>
+    
     {% block scripts %}{% endblock %}
 </body>
 </html>

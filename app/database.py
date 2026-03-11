@@ -3,12 +3,11 @@ import os
 import json
 from datetime import datetime
 
-# Get the directory where this file is located (app/)
-current_dir = os.path.dirname(os.path.abspath(__file__))
-# Go up one level to the project root (supply-chain-analytics/)
-project_root = os.path.dirname(current_dir)
-# Set database file in project root
-DB_FILE = os.path.join(project_root, 'chainpulse.db')
+# Use absolute paths for database
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+PROJECT_ROOT = os.path.dirname(BASE_DIR)
+DB_FILE = os.path.join(PROJECT_ROOT, 'chainpulse.db')
+DB_FILE = os.path.abspath(DB_FILE)
 
 # ── Connection ───────────────────────
 def get_db():
@@ -18,183 +17,155 @@ def get_db():
 
 # ── Initialize all tables ────────────
 def init_db():
-    print(f"Initializing database at: {DB_FILE}")
-    conn = get_db()
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     
-    # Create tables one by one to avoid issues
-    tables = [
-        ("dataset_versions", """CREATE TABLE IF NOT EXISTS dataset_versions (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            version_number TEXT NOT NULL,
-            filename TEXT NOT NULL,
-            uploaded_by TEXT NOT NULL,
-            uploaded_at TEXT NOT NULL,
-            total_rows INTEGER DEFAULT 0,
-            total_revenue REAL DEFAULT 0,
-            late_rate REAL DEFAULT 0,
-            date_range TEXT DEFAULT '',
-            is_active INTEGER DEFAULT 0,
-            folder_path TEXT DEFAULT '',
-            notes TEXT DEFAULT ''
-        )"""),
-        
-        ("orders", """CREATE TABLE IF NOT EXISTS orders (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            version_id INTEGER NOT NULL,
-            order_id TEXT,
-            order_date TEXT,
-            sales REAL,
-            customer_id TEXT,
-            delivery_status TEXT,
-            shipping_mode TEXT,
-            category TEXT,
-            region TEXT,
-            late_delivery_risk INTEGER,
-            profit REAL,
-            quantity INTEGER,
-            FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
-        )"""),
-        
-        ("risk_scores", """CREATE TABLE IF NOT EXISTS risk_scores (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            version_id INTEGER NOT NULL,
-            order_id TEXT,
-            risk_level TEXT,
-            probability REAL,
-            revenue_at_risk REAL,
-            shipping_mode TEXT,
-            region TEXT,
-            category TEXT,
-            FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
-        )"""),
-        
-        ("forecasts", """CREATE TABLE IF NOT EXISTS forecasts (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            version_id INTEGER NOT NULL,
-            category TEXT,
-            forecast_date TEXT,
-            predicted_sales REAL,
-            lower_bound REAL,
-            upper_bound REAL,
-            FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
-        )"""),
-        
-        ("customer_segments", """CREATE TABLE IF NOT EXISTS customer_segments (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            version_id INTEGER NOT NULL,
-            customer_id TEXT,
-            segment TEXT,
-            recency INTEGER,
-            frequency INTEGER,
-            monetary REAL,
-            rfm_score TEXT,
-            FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
-        )""")
-    ]
+    c.execute('''CREATE TABLE IF NOT EXISTS dataset_versions (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version_number TEXT,
+        filename TEXT,
+        uploaded_by TEXT,
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        total_rows INTEGER DEFAULT 0,
+        total_revenue REAL DEFAULT 0,
+        late_rate REAL DEFAULT 0,
+        date_range TEXT DEFAULT '',
+        is_active INTEGER DEFAULT 0,
+        folder_path TEXT DEFAULT ''
+    )''')
     
-    # Execute each table creation
-    for table_name, table_sql in tables:
-        try:
-            c.execute(table_sql)
-            print(f"✅ Created table: {table_name}")
-        except Exception as e:
-            print(f"❌ Error creating table {table_name}: {e}")
+    c.execute('''CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version_id INTEGER,
+        order_id TEXT,
+        order_date TEXT,
+        sales REAL,
+        region TEXT,
+        category TEXT,
+        shipping_mode TEXT,
+        delivery_status TEXT,
+        late_flag INTEGER DEFAULT 0,
+        FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
+    )''')
     
-    # Create indexes
-    indexes = [
-        ("idx_orders_version", "CREATE INDEX IF NOT EXISTS idx_orders_version ON orders(version_id)"),
-        ("idx_risk_version", "CREATE INDEX IF NOT EXISTS idx_risk_version ON risk_scores(version_id)"),
-        ("idx_forecast_version", "CREATE INDEX IF NOT EXISTS idx_forecast_version ON forecasts(version_id)"),
-        ("idx_segments_version", "CREATE INDEX IF NOT EXISTS idx_segments_version ON customer_segments(version_id)")
-    ]
+    c.execute('''CREATE TABLE IF NOT EXISTS risk_scores (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version_id INTEGER,
+        order_id TEXT,
+        risk_level TEXT,
+        probability REAL,
+        revenue_at_risk REAL,
+        FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
+    )''')
     
-    for index_name, index_sql in indexes:
-        try:
-            c.execute(index_sql)
-            print(f"✅ Created index: {index_name}")
-        except Exception as e:
-            print(f"❌ Error creating index {index_name}: {e}")
+    c.execute('''CREATE TABLE IF NOT EXISTS forecasts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version_id INTEGER,
+        category TEXT,
+        forecast_date TEXT,
+        predicted_sales REAL,
+        lower_bound REAL,
+        upper_bound REAL,
+        FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
+    )''')
+    
+    c.execute('''CREATE TABLE IF NOT EXISTS customer_segments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        version_id INTEGER,
+        customer_id TEXT,
+        recency INTEGER,
+        frequency INTEGER,
+        monetary REAL,
+        segment TEXT,
+        cluster INTEGER,
+        FOREIGN KEY (version_id) REFERENCES dataset_versions(id)
+    )''')
     
     conn.commit()
     conn.close()
-    print("✅ Database initialized: chainpulse.db")
+    print('[OK] Database initialized')
 
 # ── Version operations ───────────────
 def create_version(filename, uploaded_by, rows, revenue, late_rate, date_range):
-    conn = get_db()
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     
-    # Get next version number
-    c.execute("""SELECT COUNT(*) FROM dataset_versions""")
-    count = c.fetchone()[0]
-    version_num = f"v{count + 1}"
+    # Count existing versions
+    count = c.execute('SELECT COUNT(*) FROM dataset_versions').fetchone()[0]
+    version_num = f'v{count + 1}'
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    folder = f"data/versions/{version_num}_{timestamp}"
+    folder = os.path.join(PROJECT_ROOT, 'data', 'versions', f'{version_num}_{filename[:20]}')
+    os.makedirs(folder, exist_ok=True)
     
-    c.execute("""
-        INSERT INTO dataset_versions 
-        (version_number, filename, uploaded_by, uploaded_at, total_rows, 
+    from datetime import datetime
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    c.execute('''INSERT INTO dataset_versions
+        (version_number, filename, uploaded_by, uploaded_at, total_rows,
          total_revenue, late_rate, date_range, is_active, folder_path)
-        VALUES (?,?,?,?,?,?,?,?,0,?)
-    """, (version_num, filename, uploaded_by, 
-          datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-          rows, revenue, late_rate, date_range, folder))
+        VALUES (?,?,?,?,?,?,?,?,0,?)''', 
+        (version_num, filename, uploaded_by, timestamp, rows, revenue, late_rate, date_range, folder))
     
     version_id = c.lastrowid
     conn.commit()
     conn.close()
     
-    # Create version folder
-    os.makedirs(folder, exist_ok=True)
+    print(f'[OK] Version {version_num} created (id={version_id})')
     return version_id, version_num, folder
 
 def set_active_version(version_id):
-    conn = get_db()
+    conn = sqlite3.connect(DB_FILE)
     c = conn.cursor()
     
-    # Deactivate all
-    c.execute("""UPDATE dataset_versions SET is_active = 0""")
+    # Deactivate all versions
+    c.execute('UPDATE dataset_versions SET is_active = 0')
     
-    # Activate selected
-    c.execute("""UPDATE dataset_versions SET is_active = 1 WHERE id = ?""", (version_id,))
+    # Activate this one
+    c.execute('UPDATE dataset_versions SET is_active = 1 WHERE id = ?', (version_id,))
     
     conn.commit()
     conn.close()
     
-    # Update current.txt
-    os.makedirs('data/versions', exist_ok=True)
-    with open('data/versions/current.txt', 'w') as f:
-        f.write(str(version_id))
-
-def get_active_version():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""
-        SELECT * FROM dataset_versions 
-        WHERE is_active = 1 
-        ORDER BY id DESC LIMIT 1
-    """)
-    row = c.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    print(f'[OK] Version {version_id} set as active')
 
 def get_all_versions():
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""SELECT * FROM dataset_versions ORDER BY id DESC""")
-    rows = c.fetchall()
-    conn.close()
-    return [dict(r) for r in rows]
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        versions = c.execute('''SELECT id, version_number, filename, uploaded_by,
+            uploaded_at, total_rows, total_revenue, late_rate, date_range, is_active, folder_path
+            FROM dataset_versions ORDER BY id DESC''').fetchall()
+        conn.close()
+        return versions
+    except Exception as e:
+        print(f'[WARN] get_all_versions: {e}')
+        return []
+
+def get_active_version():
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        v = c.execute('''SELECT id, version_number, filename, uploaded_by,
+            uploaded_at, total_rows, total_revenue, late_rate, date_range, folder_path
+            FROM dataset_versions WHERE is_active = 1 LIMIT 1''').fetchone()
+        conn.close()
+        return v
+    except Exception as e:
+        print(f'[WARN] get_active_version: {e}')
+        return None
 
 def get_version_by_id(version_id):
-    conn = get_db()
-    c = conn.cursor()
-    c.execute("""SELECT * FROM dataset_versions WHERE id = ?""", (version_id,))
-    row = c.fetchone()
-    conn.close()
-    return dict(row) if row else None
+    try:
+        conn = sqlite3.connect(DB_FILE)
+        c = conn.cursor()
+        v = c.execute('''SELECT id, version_number, filename, uploaded_by,
+            uploaded_at, total_rows, total_revenue, late_rate, date_range, is_active, folder_path
+            FROM dataset_versions WHERE id = ?''', (version_id,)).fetchone()
+        conn.close()
+        return v
+    except Exception as e:
+        print(f'[WARN] get_version_by_id: {e}')
+        return None
 
 # ── Data insertion ───────────────────
 def insert_orders(version_id, df):

@@ -67,115 +67,115 @@ def restore_defaults(project_root):
     except Exception as e:
         return False, f"Error restoring defaults: {str(e)}"
 
-# ── Save version after pipeline runs ─
-def save_version_outputs(version_id, folder, project_root):
-    """After pipeline runs, copy all output
-    CSVs into the version folder AND
-    insert data into SQLite database."""
+def save_version_outputs(version_id, version_folder, project_root):
+    import shutil, json
+    from datetime import datetime
     
-    processed = os.path.join(project_root, 'data', 'processed')
-    raw = os.path.join(project_root, 'data', 'raw', 'DataCoSupplyChainDataset.csv')
+    os.makedirs(version_folder, exist_ok=True)
     
-    # Files to copy into version folder
+    # Files to copy to version folder
     files_to_copy = {
-        'raw.csv': raw,
-        'risk_scored.csv': os.path.join(processed, 'delivery_risk_scored.csv'),
-        'forecasts.csv': os.path.join(processed, 'demand_forecast_results.csv'),
-        'segments.csv': os.path.join(processed, 'customer_segments.csv'),
-        'nlp.csv': os.path.join(processed, 'product_nlp_analysis.csv')
+        'raw_data': os.path.join(project_root, 'data', 'raw'),
+        'processed': os.path.join(project_root, 'data', 'processed'),
+        'models': os.path.join(project_root, 'models'),
     }
     
     copied = []
-    for dest_name, src_path in files_to_copy.items():
-        if os.path.exists(src_path):
-            dest = os.path.join(folder, dest_name)
-            shutil.copy2(src_path, dest)
-            copied.append(dest_name)
     
-    print(f"📁 Saved {len(copied)} files to version folder")
+    # Copy processed CSVs
+    processed_src = files_to_copy['processed']
+    processed_dst = os.path.join(version_folder, 'processed')
+    os.makedirs(processed_dst, exist_ok=True)
     
-    # Insert into SQLite
-    try:
-        # Orders
-        if os.path.exists(raw):
-            df = pd.read_csv(raw, encoding='latin-1', nrows=50000)
-            insert_orders(version_id, df)
-            print(f"✅ Inserted {len(df):,} orders to DB")
-        
-        # Risk scores
-        risk_path = os.path.join(processed, 'delivery_risk_scored.csv')
-        if os.path.exists(risk_path):
-            df = pd.read_csv(risk_path)
-            insert_risk_scores(version_id, df)
-            print(f"✅ Inserted {len(df):,} risk scores to DB")
-        
-        # Forecasts
-        fc_path = os.path.join(processed, 'demand_forecast_results.csv')
-        if os.path.exists(fc_path):
-            df = pd.read_csv(fc_path)
-            insert_forecasts(version_id, df)
-            print(f"✅ Inserted {len(df):,} forecasts to DB")
-        
-        # Segments
-        seg_path = os.path.join(processed, 'customer_segments.csv')
-        if os.path.exists(seg_path):
-            df = pd.read_csv(seg_path)
-            insert_segments(version_id, df)
-            print(f"✅ Inserted {len(df):,} segments to DB")
-        
-        # Save metadata
-        meta = {
-            'version_id': version_id,
-            'saved_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-            'files_saved': copied
-        }
-        
-        with open(os.path.join(folder, 'metadata.json'), 'w') as f:
-            json.dump(meta, f, indent=2)
-            
-    except Exception as e:
-        print(f"⚠️ DB insert error: {e}")
+    if os.path.exists(processed_src):
+        for f in os.listdir(processed_src):
+            if f.endswith('.csv') or f.endswith('.json'):
+                try:
+                    shutil.copy2(os.path.join(processed_src, f), os.path.join(processed_dst, f))
+                    copied.append(f)
+                except Exception as e:
+                    print(f'[WARN] Copy {f}: {e}')
     
-    return copied
+    # Copy raw CSV
+    raw_src = files_to_copy['raw_data']
+    raw_dst = os.path.join(version_folder, 'raw')
+    os.makedirs(raw_dst, exist_ok=True)
+    
+    if os.path.exists(raw_src):
+        for f in os.listdir(raw_src):
+            if f.endswith('.csv'):
+                try:
+                    shutil.copy2(os.path.join(raw_src, f), os.path.join(raw_dst, f))
+                    copied.append(f)
+                except Exception as e:
+                    print(f'[WARN] Copy raw {f}: {e}')
+    
+    # Copy models
+    models_src = files_to_copy['models']
+    models_dst = os.path.join(version_folder, 'models')
+    os.makedirs(models_dst, exist_ok=True)
+    
+    if os.path.exists(models_src):
+        for f in os.listdir(models_src):
+            if f.endswith('.pkl'):
+                try:
+                    shutil.copy2(os.path.join(models_src, f), os.path.join(models_dst, f))
+                    copied.append(f)
+                except Exception as e:
+                    print(f'[WARN] Copy model {f}: {e}')
+    
+    # Save metadata
+    metadata = {
+        'version_id': version_id,
+        'saved_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        'files_copied': copied,
+        'folder': version_folder
+    }
+    
+    with open(os.path.join(version_folder, 'metadata.json'), 'w') as f:
+        json.dump(metadata, f, indent=2)
+    
+    print(f'[OK] Version {version_id} saved: {len(copied)} files')
+    return True
 
-# ── Restore old version to active ────
 def restore_version(version_id, project_root):
-    """Switch active version.
-    Copies version folder files back to 
-    data/processed/ so dashboard shows them."""
-    
-    from app.database import get_version_by_id
+    import shutil
+    from app.database import get_version_by_id, set_active_version
     
     version = get_version_by_id(version_id)
     if not version:
-        return False, "Version not found"
+        return False, 'Version not found'
     
-    folder = version['folder_path']
+    folder = version[-1]  # folder_path
     if not os.path.exists(folder):
-        return False, "Version files missing"
+        return False, f'Version folder missing: {folder}'
     
-    processed = os.path.join(project_root, 'data', 'processed')
-    raw_dir = os.path.join(project_root, 'data', 'raw')
+    # Restore processed files
+    processed_src = os.path.join(folder, 'processed')
+    processed_dst = os.path.join(project_root, 'data', 'processed')
     
-    # Map version files back to processed/
-    restore_map = {
-        'raw.csv': os.path.join(raw_dir, 'DataCoSupplyChainDataset.csv'),
-        'risk_scored.csv': os.path.join(processed, 'delivery_risk_scored.csv'),
-        'forecasts.csv': os.path.join(processed, 'demand_forecast_results.csv'),
-        'segments.csv': os.path.join(processed, 'customer_segments.csv')
-    }
+    if os.path.exists(processed_src):
+        for f in os.listdir(processed_src):
+            try:
+                shutil.copy2(os.path.join(processed_src, f), os.path.join(processed_dst, f))
+            except Exception as e:
+                print(f'[WARN] Restore {f}: {e}')
     
-    restored = []
-    for src_name, dest_path in restore_map.items():
-        src = os.path.join(folder, src_name)
-        if os.path.exists(src):
-            shutil.copy2(src, dest_path)
-            restored.append(src_name)
+    # Restore models
+    models_src = os.path.join(folder, 'models')
+    models_dst = os.path.join(project_root, 'models')
     
-    # Update active version in DB
+    if os.path.exists(models_src):
+        for f in os.listdir(models_src):
+            if f.endswith('.pkl'):
+                try:
+                    shutil.copy2(os.path.join(models_src, f), os.path.join(models_dst, f))
+                except Exception as e:
+                    print(f'[WARN] Restore model {f}: {e}')
+    
     set_active_version(version_id)
-    
-    return True, f"Restored {len(restored)} files from {version['version_number']}"
+    print(f'[OK] Restored to version {version_id}')
+    return True, 'Version restored'
 
 # ── Get version comparison ────────────
 def compare_versions(v1_id, v2_id):

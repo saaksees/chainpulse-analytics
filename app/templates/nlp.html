@@ -324,8 +324,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/nlp/wordcloud_products.png" 
-                     alt="Product Word Cloud" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="topKeywordsChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-blue">
                 <div class="cp-insight-icon" style="background: var(--blue);">☁️</div>
@@ -348,8 +349,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/nlp/top_words_frequency.png" 
-                     alt="Word Frequency" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="topBigramsChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-purple">
                 <div class="cp-insight-icon" style="background: var(--purple);">📊</div>
@@ -372,8 +374,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/nlp/wordcloud_by_category.png" 
-                     alt="Category Word Clouds" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="topicDistributionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-amber">
                 <div class="cp-insight-icon" style="background: var(--amber);">🎨</div>
@@ -396,8 +399,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/nlp/sentiment_heatmap.png" 
-                     alt="Sentiment Heatmap" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="sentimentDistributionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-green">
                 <div class="cp-insight-icon" style="background: var(--green);">😊</div>
@@ -641,6 +645,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/nlp.js') }}"></script>
 <script>
 // Enhanced NLP Page Interactions
 function exportChart(chartType) {

@@ -395,8 +395,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/rfm/segment_distribution.png" 
-                     alt="Segment Distribution" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="segmentDistributionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-blue">
                 <div class="cp-insight-icon" style="background: var(--blue);">📊</div>
@@ -419,8 +420,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/rfm/rfm_heatmap.png" 
-                     alt="RFM Heatmap" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="segmentRevenueChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-purple">
                 <div class="cp-insight-icon" style="background: var(--purple);">🔥</div>
@@ -443,8 +445,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/rfm/revenue_treemap.png" 
-                     alt="Revenue Treemap" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="clusterSizesChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-green">
                 <div class="cp-insight-icon" style="background: var(--green);">💰</div>
@@ -467,8 +470,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/rfm/3d_cluster_scatter.png" 
-                     alt="3D Clusters" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="recencyDistributionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-amber">
                 <div class="cp-insight-icon" style="background: var(--amber);">🎯</div>
@@ -677,6 +681,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/customers.js') }}"></script>
 <script>
 // Enhanced Customer Page Interactions
 function exportChart(chartType) {

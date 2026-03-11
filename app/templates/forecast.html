@@ -357,8 +357,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/forecasting/90day_forecast.png" 
-                     alt="90-Day Forecast" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="forecastSummaryChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-blue">
                 <div class="cp-insight-icon" style="background: var(--blue);">📊</div>
@@ -381,8 +382,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/forecasting/actual_vs_predicted.png" 
-                     alt="Actual vs Predicted" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="forecastTrendChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-green">
                 <div class="cp-insight-icon" style="background: var(--green);">✅</div>
@@ -552,6 +554,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/forecast.js') }}"></script>
 <script>
 // Enhanced Forecast Page Interactions
 function exportChart(chartType) {

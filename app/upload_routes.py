@@ -120,7 +120,18 @@ def api_upload():
         history = history[:10]  # Keep only last 10
         
         with open(history_file, 'w') as f:
-            json.dump(history, f, indent=2)
+            import json
+            class SafeEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    import numpy as np
+                    if isinstance(obj, (np.integer, np.int64, np.int32)):
+                        return int(obj)
+                    if isinstance(obj, (np.floating, np.float64)):
+                        return float(obj)
+                    if isinstance(obj, np.ndarray):
+                        return obj.tolist()
+                    return super().default(obj)
+            json.dump(history, f, indent=2, cls=SafeEncoder)
         
         return jsonify({
             'valid': True,
@@ -140,6 +151,9 @@ def api_pipeline_run():
     
     # Capture config outside generator
     project_root = current_app.config['PROJECT_ROOT']
+    app = current_app._get_current_object()
+    from flask_login import current_user
+    username = current_user.username if current_user.is_authenticated else 'admin'
     
     def generate():
         try:
@@ -189,8 +203,143 @@ def api_pipeline_run():
                     yield f"data: {json.dumps({'type': 'error', 'message': f'Step {i} failed'})}\n\n"
                     return
             
-            # All steps complete
-            yield f"data: {json.dumps({'type': 'complete'})}\n\n"
+            # ── Graceful version save ──────────
+            # Version control is isolated.
+            # If it fails, pipeline still
+            # completes successfully.
+            version_saved = False
+            version_num = 'unsaved'
+            try:
+                with app.app_context():
+                    import pandas as pd
+                    from app.database import (init_db,
+                                            create_version,
+                                            set_active_version)
+                    from app.version_manager import (save_version_outputs)
+                    
+                    init_db()
+                    
+                    # Find CSV in data/raw/
+                    raw_dir = os.path.join(project_root,
+                                         'data', 'raw')
+                    csv_files = [f for f in
+                               os.listdir(raw_dir)
+                               if f.endswith('.csv')]
+                    filename = (csv_files[0]
+                              if csv_files
+                              else 'dataset.csv')
+                    csv_path = os.path.join(raw_dir, filename)
+                    
+                    # Read stats safely
+                    total_rows = 0
+                    revenue = 0.0
+                    late_rate = 0.0
+                    date_range = ''
+                    
+                    try:
+                        df = pd.read_csv(csv_path,
+                                       encoding='latin-1',
+                                       low_memory=False)
+                        total_rows = len(df)
+                        
+                        # Sales column
+                        for col in df.columns:
+                            if any(k in
+                                 col.lower()
+                                 for k in ['sales',
+                                         'revenue',
+                                         'amount']):
+                                revenue = float(pd.to_numeric(df[col],
+                                              errors='coerce').sum())
+                                break
+                        
+                        # Late rate
+                        for col in df.columns:
+                            if any(k in
+                                 col.lower()
+                                 for k in ['delivery',
+                                         'status']):
+                                late_rate = float(df[col].astype(str).str.contains('Late',
+                                                na=False).mean() * 100)
+                                break
+                        
+                        # Date range
+                        for col in df.columns:
+                            if 'date' in col.lower():
+                                dates = pd.to_datetime(df[col],
+                                                     errors='coerce').dropna()
+                                if len(dates) > 0:
+                                    date_range = (f"{dates.min().date()}"
+                                                f" to "
+                                                f"{dates.max().date()}")
+                                break
+                    except Exception as stats_err:
+                        # Stats failed but continue
+                        print(f'[WARN] Stats read '
+                              f'failed: {stats_err}')
+                        # Use safe defaults
+                        total_rows = 0
+                        revenue = 0.0
+                        late_rate = 0.0
+                        date_range = 'Unknown'
+                    
+                    # Save version to DB
+                    version_id, version_num, folder\
+                        = create_version(filename=filename,
+                                       uploaded_by=username,
+                                       rows=total_rows,
+                                       revenue=round(revenue, 2),
+                                       late_rate=round(late_rate, 1),
+                                       date_range=date_range)
+                    
+                    # Copy files to version folder
+                    save_version_outputs(version_id,
+                                       folder,
+                                       project_root)
+                    
+                    # Set as active version
+                    set_active_version(version_id)
+                    
+                    version_saved = True
+                    print(f'[OK] Version '
+                          f'{version_num} saved')
+                    
+                    yield (f"data: {json.dumps({'type': 'version_saved', 'version': version_num, 'rows': total_rows, 'revenue': round(revenue, 2), 'late_rate': round(late_rate, 1)})}\n\n")
+                    
+            except Exception as version_err:
+                # VERSION SAVE FAILED
+                # But pipeline already completed
+                # DO NOT crash. Just warn user.
+                import traceback
+                error_msg = str(version_err)
+                print(f'[WARN] Version save failed '
+                      f'(non-critical): {error_msg}')
+                print(traceback.format_exc())
+                
+                # Write to log file
+                try:
+                    log_path = os.path.join(project_root,
+                                          'logs',
+                                          'pipeline.log')
+                    os.makedirs(os.path.dirname(log_path),
+                              exist_ok=True)
+                    with open(log_path, 'a',
+                            encoding='utf-8') as f:
+                        from datetime import datetime
+                        f.write(f"\n[{datetime.now()}] "
+                               f"VERSION SAVE FAILED: "
+                               f"{error_msg}\n")
+                except Exception:
+                    pass  # Even logging failed
+                    # still don't crash
+                
+                # Send warning to UI
+                # but NOT a failure status
+                yield (f"data: {json.dumps({'type': 'warning', 'message': 'Pipeline complete. Version history unavailable this run.'})}\n\n")
+            
+            # ── Pipeline always ends here ──────
+            # Regardless of version save result
+            yield (f"data: {json.dumps({'type': 'complete', 'success': True, 'version_saved': version_saved, 'version': version_num})}\n\n")
             
         except Exception as e:
             yield f"data: {json.dumps({'type': 'error', 'message': str(e)})}\n\n"
@@ -337,7 +486,18 @@ def api_apply_mapping():
         history = history[:10]  # Keep only last 10
         
         with open(history_file, 'w') as f:
-            json.dump(history, f, indent=2)
+            import json
+            class SafeEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    import numpy as np
+                    if isinstance(obj, (np.integer, np.int64, np.int32)):
+                        return int(obj)
+                    if isinstance(obj, (np.floating, np.float64)):
+                        return float(obj)
+                    if isinstance(obj, np.ndarray):
+                        return obj.tolist()
+                    return super().default(obj)
+            json.dump(history, f, indent=2, cls=SafeEncoder)
         
         # Clean up temp file and session
         if os.path.exists(temp_path):
@@ -355,10 +515,52 @@ def api_apply_mapping():
 @upload.route('/versions')
 @require_auth
 def versions_page():
-    from app.database import (get_all_versions, get_active_version)
+    from app.database import get_all_versions, get_active_version, init_db
+    
+    # Make sure DB exists
+    init_db()
+    
     versions = get_all_versions()
     active = get_active_version()
-    return render_template('versions.html', versions=versions, active=active)
+    
+    # Convert to list of dicts
+    versions_list = []
+    for v in versions:
+        versions_list.append({
+            'id': v[0],
+            'version_number': v[1] or 'v?',
+            'filename': v[2] or 'Unknown',
+            'uploaded_by': v[3] or 'Unknown',
+            'uploaded_at': v[4] or 'N/A',
+            'total_rows': v[5] or 0,
+            'revenue': v[6] or 0,
+            'total_revenue': v[6] or 0,
+            'late_rate': v[7] or 0,
+            'date_range': v[8] or 'N/A',
+            'is_active': bool(v[9]),
+            'folder_path': v[10] or ''
+        })
+    
+    active_dict = None
+    if active:
+        active_dict = {
+            'id': active[0],
+            'version_number': active[1] or 'v?',
+            'filename': active[2] or 'Unknown',
+            'uploaded_by': active[3] or 'Unknown',
+            'uploaded_at': active[4] or 'N/A',
+            'total_rows': active[5] or 0,
+            'revenue': active[6] or 0,
+            'total_revenue': active[6] or 0,
+            'late_rate': active[7] or 0,
+            'date_range': active[8] or 'N/A',
+            'folder_path': active[9] or ''
+        }
+    
+    return render_template('versions.html',
+                         versions=versions_list,
+                         active_version=active_dict,
+                         total_versions=len(versions_list))
 
 @upload.route('/api/versions')
 @require_auth
@@ -371,10 +573,21 @@ def get_versions():
 @require_auth
 @require_role('admin', 'analyst')
 def switch_version(vid):
-    from app.version_manager import restore_version
-    project_root = current_app.config['PROJECT_ROOT']
-    ok, msg = restore_version(vid, project_root)
-    return jsonify({'success': ok, 'message': msg})
+    try:
+        project_root = current_app.config['PROJECT_ROOT']
+        app = current_app._get_current_object()
+        
+        with app.app_context():
+            from app.version_manager import restore_version
+            success, msg = restore_version(vid, project_root)
+            
+            if success:
+                return jsonify({'success': True, 'message': msg, 'version_id': vid})
+            else:
+                return jsonify({'success': False, 'message': msg}), 400
+                
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @upload.route('/api/versions/compare', methods=['POST'])
 @require_auth
@@ -463,7 +676,9 @@ def run_auto_pipeline_route():
             
             yield f"data: {json.dumps({'type': 'step_done', 'step': 5, 'name': 'Power BI Export', 'success': export_success, 'progress': 95})}\n\n"
             
-            # Save version
+            # ── Graceful version save ──────────
+            version_saved = False
+            version_num = 'unsaved'
             try:
                 from app.database import create_version, set_active_version
                 from app.version_manager import save_version_outputs
@@ -494,9 +709,27 @@ def run_auto_pipeline_route():
                 save_version_outputs(version_id, folder, project_root)
                 set_active_version(version_id)
                 
+                version_saved = True
                 yield f"data: {json.dumps({'type': 'version_saved', 'version': version_num})}\n\n"
-            except Exception as e:
-                print(f"Version save error: {e}")
+                print(f'[OK] Auto pipeline version {version_num} saved')
+                
+            except Exception as version_err:
+                import traceback
+                error_msg = str(version_err)
+                print(f'[WARN] Auto pipeline version save failed (non-critical): {error_msg}')
+                print(traceback.format_exc())
+                
+                # Write to log file
+                try:
+                    log_path = os.path.join(project_root, 'logs', 'pipeline.log')
+                    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+                    with open(log_path, 'a', encoding='utf-8') as f:
+                        from datetime import datetime
+                        f.write(f"\n[{datetime.now()}] AUTO PIPELINE VERSION SAVE FAILED: {error_msg}\n")
+                except Exception:
+                    pass
+                
+                yield f"data: {json.dumps({'type': 'warning', 'message': 'Auto pipeline complete. Version history unavailable this run.'})}\n\n"
             
             # Build auto pipeline report
             auto_report = {

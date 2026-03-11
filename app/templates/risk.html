@@ -349,8 +349,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/risk_model/roc_curves.png" 
-                     alt="ROC Curves" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="riskDistributionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-blue">
                 <div class="cp-insight-icon" style="background: var(--blue);">🏆</div>
@@ -373,8 +374,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/risk_model/feature_importance.png" 
-                     alt="Feature Importance" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="riskByRegionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-purple">
                 <div class="cp-insight-icon" style="background: var(--purple);">🎯</div>
@@ -397,8 +399,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/risk_model/confusion_matrices.png" 
-                     alt="Confusion Matrix" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="riskByShippingChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-green">
                 <div class="cp-insight-icon" style="background: var(--green);">✅</div>
@@ -421,8 +424,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/risk_model/risk_distribution.png" 
-                     alt="Risk Distribution" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="featureImportanceChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-amber">
                 <div class="cp-insight-icon" style="background: var(--amber);">⚖️</div>

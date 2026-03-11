@@ -308,8 +308,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/eda/monthly_sales_trend.png" 
-                     alt="Monthly Sales Trend" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="revenueTrendChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-blue">
                 <div class="cp-insight-icon" style="background: var(--blue);">📈</div>
@@ -332,8 +333,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/eda/top_10_categories.png" 
-                     alt="Top 10 Categories" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="categoryChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-amber">
                 <div class="cp-insight-icon" style="background: var(--amber);">🎯</div>
@@ -356,8 +358,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/eda/sales_by_region.png" 
-                     alt="Sales by Region" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="regionChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-green">
                 <div class="cp-insight-icon" style="background: var(--green);">🌎</div>
@@ -380,8 +383,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/eda/delivery_status_distribution.png" 
-                     alt="Delivery Status" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="orderStatusChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-red">
                 <div class="cp-insight-icon" style="background: var(--red);">⚠️</div>
@@ -410,8 +414,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/eda/correlation_heatmap.png" 
-                     alt="Correlation Heatmap" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="lateRateChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-purple">
                 <div class="cp-insight-icon" style="background: var(--purple);">🔗</div>
@@ -434,8 +439,9 @@
         </div>
         <div style="padding: 0 24px 24px 24px;">
             <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                <img src="/visuals/eda/missing_values_heatmap.png" 
-                     alt="Missing Values" class="cp-chart-image">
+                <div class="chart-container">
+                    <canvas id="ordersMonthChart" height="300"></canvas>
+                </div>
             </div>
             <div class="cp-insight-card insight-green">
                 <div class="cp-insight-icon" style="background: var(--green);">✅</div>
@@ -531,6 +537,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', filename='js/eda.js') }}"></script>
 <script>
 // Enhanced EDA Page Interactions
 function exportChart(chartType) {
