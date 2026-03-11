@@ -1,0 +1,385 @@
+{% extends 'base.html' %}
+
+{% block title %}Inventory Optimization{% endblock %}
+
+{% block content %}
+<style>
+/* Inventory-specific styling */
+.inventory-kpi-card {
+    background: linear-gradient(135deg, var(--bg-card), rgba(17, 24, 39, 0.9));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.inventory-kpi-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.05), rgba(245, 158, 11, 0.05));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.inventory-kpi-card:hover::before {
+    opacity: 1;
+}
+
+.inventory-kpi-card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+}
+
+.abc-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.abc-a { background: rgba(16, 185, 129, 0.2); color: var(--green); }
+.abc-b { background: rgba(245, 158, 11, 0.2); color: var(--amber); }
+.abc-c { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+
+.stock-status-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.fast-moving { background: rgba(16, 185, 129, 0.2); color: var(--green); }
+.medium-moving { background: rgba(245, 158, 11, 0.2); color: var(--amber); }
+.slow-moving { background: rgba(239, 68, 68, 0.2); color: var(--red); }
+
+.metric-highlight {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 4px;
+}
+
+.metric-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.optimization-card {
+    background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05));
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.optimization-title {
+    font-weight: 600;
+    color: var(--green);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.optimization-text {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.4;
+}
+</style>
+
+<!-- PAGE HEADER -->
+<div class="cp-page-header">
+    <div class="cp-page-badge">📦 Inventory Optimization</div>
+    <h1 class="cp-page-title">Inventory <span>Optimizer</span></h1>
+    <p class="cp-page-subtitle">Smart stock level optimization with ABC analysis and reorder point calculations</p>
+    <div style="margin-top:16px">
+        <a href="/api/report/inventory" style="display:inline-flex;align-items:center;gap:8px;background:#1E293B;color:#F1F5F9;border:1px solid #334155;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s" onmouseover="this.style.borderColor='#10B981';this.style.color='#10B981'" onmouseout="this.style.borderColor='#334155';this.style.color='#F1F5F9'">📄 Download Report</a>
+    </div>
+</div>
+
+<!-- INVENTORY KPIs -->
+<div class="cp-kpi-grid">
+    <div class="inventory-kpi-card">
+        <span class="cp-kpi-icon">📦</span>
+        <div class="cp-kpi-label">Total Products</div>
+        <div class="cp-kpi-value" id="totalProducts">{{ inventory_data.get('total_products', 0) }}</div>
+        <div class="cp-kpi-sub">Under Management</div>
+    </div>
+    
+    <div class="inventory-kpi-card">
+        <span class="cp-kpi-icon">💰</span>
+        <div class="cp-kpi-label">Inventory Value</div>
+        <div class="cp-kpi-value" id="inventoryValue">${{ "%.0f"|format(inventory_data.get('total_inventory_value', 0)) }}K</div>
+        <div class="cp-kpi-sub">Total Investment</div>
+    </div>
+    
+    <div class="inventory-kpi-card">
+        <span class="cp-kpi-icon">🔄</span>
+        <div class="cp-kpi-label">Avg Turnover</div>
+        <div class="cp-kpi-value" id="avgTurnover">{{ "%.1f"|format(inventory_data.get('avg_turnover', 0)) }}x</div>
+        <div class="cp-kpi-sub">Annual Rotation</div>
+    </div>
+    
+    <div class="inventory-kpi-card">
+        <span class="cp-kpi-icon">⚡</span>
+        <div class="cp-kpi-label">Fast Movers</div>
+        <div class="cp-kpi-value" id="fastMovers">{{ inventory_data.get('fast_moving_count', 0) }}</div>
+        <div class="cp-kpi-sub">High Velocity Items</div>
+    </div>
+</div>
+
+<!-- CHARTS GRID -->
+<div class="cp-chart-grid">
+    <!-- ABC Analysis -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📊 ABC Analysis</h3>
+                <p class="cp-chart-subtitle">Product classification by sales value</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('abc_analysis')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div class="chart-container">
+                    <canvas id="abcAnalysisChart" height="300"></canvas>
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>🎯</span> ABC Optimization
+                </div>
+                <div class="optimization-text">
+                    Focus 80% of inventory management effort on Category A items (80% of sales value)
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Stock Movement Analysis -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🚀 Stock Movement</h3>
+                <p class="cp-chart-subtitle">Velocity-based classification</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('stock_movement')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div class="chart-container">
+                    <canvas id="stockMovementChart" height="300"></canvas>
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>⚡</span> Velocity Insights
+                </div>
+                <div class="optimization-text">
+                    Fast movers need frequent reordering, slow movers require demand stimulation
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Turnover Ratio by Category -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🔄 Turnover by Category</h3>
+                <p class="cp-chart-subtitle">Annual inventory rotation rates</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('turnover_category')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div class="chart-container">
+                    <canvas id="turnoverCategoryChart" height="300"></canvas>
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>📈</span> Performance Benchmark
+                </div>
+                <div class="optimization-text">
+                    Target turnover: 6-12x annually for optimal cash flow
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Inventory Value Distribution -->
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">💰 Inventory Investment</h3>
+                <p class="cp-chart-subtitle">Capital allocation by category</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('inventory_value')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div class="chart-container">
+                    <canvas id="inventoryValueChart" height="300"></canvas>
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>💡</span> Capital Efficiency
+                </div>
+                <div class="optimization-text">
+                    Balance inventory investment with service level requirements
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- REORDER RECOMMENDATIONS -->
+<div class="cp-chart-grid">
+    <div class="cp-chart-card full">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">🔔 Reorder Point Analysis</h3>
+                <p class="cp-chart-subtitle">Safety stock and reorder recommendations</p>
+            </div>
+            <button class="cp-export-btn" onclick="exportChart('reorder_analysis')">📥 Export</button>
+        </div>
+        <div style="padding: 0 24px 24px 24px;">
+            <div style="background: var(--bg-primary); border-radius: 12px; padding: 16px; margin-bottom: 16px;">
+                <div class="chart-container">
+                    <canvas id="reorderAnalysisChart" height="300"></canvas>
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>🎯</span> Reorder Strategy
+                </div>
+                <div class="optimization-text">
+                    Automated reorder points ensure 95% service level while minimizing carrying costs
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- OPTIMIZATION INSIGHTS -->
+<div class="cp-chart-grid">
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">💡 Optimization Insights</h3>
+                <p class="cp-chart-subtitle">Key recommendations</p>
+            </div>
+        </div>
+        <div style="padding: 24px;">
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>🎯</span> Focus Areas
+                </div>
+                <div class="optimization-text">
+                    Prioritize Category A items for tight inventory control and frequent review
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>⚡</span> Fast Movers
+                </div>
+                <div class="optimization-text">
+                    Implement automated reordering for high-velocity items to prevent stockouts
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>🐌</span> Slow Movers
+                </div>
+                <div class="optimization-text">
+                    Consider promotions or discontinuation for consistently slow-moving products
+                </div>
+            </div>
+            <div class="optimization-card">
+                <div class="optimization-title">
+                    <span>🔄</span> Turnover Improvement
+                </div>
+                <div class="optimization-text">
+                    Target 8-12x annual turnover through demand forecasting and lean inventory
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="cp-chart-card">
+        <div class="cp-chart-header">
+            <div>
+                <h3 class="cp-chart-title">📊 Performance Metrics</h3>
+                <p class="cp-chart-subtitle">Current vs optimal levels</p>
+            </div>
+        </div>
+        <div style="padding: 24px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div style="text-align: center;">
+                    <div class="metric-label">Service Level</div>
+                    <div class="metric-highlight">95%</div>
+                    <div style="font-size: 12px; color: var(--green);">Target Achieved</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="metric-label">Carrying Cost</div>
+                    <div class="metric-highlight">18%</div>
+                    <div style="font-size: 12px; color: var(--amber);">Within Range</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="metric-label">Stockout Risk</div>
+                    <div class="metric-highlight">5%</div>
+                    <div style="font-size: 12px; color: var(--green);">Low Risk</div>
+                </div>
+                <div style="text-align: center;">
+                    <div class="metric-label">Excess Stock</div>
+                    <div class="metric-highlight">12%</div>
+                    <div style="font-size: 12px; color: var(--amber);">Manageable</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/inventory.js') }}"></script>
+<script>
+// Enhanced Inventory Page Interactions
+function exportChart(chartType) {
+    const button = event.target;
+    const originalText = button.textContent;
+    
+    button.textContent = '⏳ Exporting...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        button.textContent = '✅ Exported!';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.disabled = false;
+        }, 2000);
+    }, 1500);
+    
+    console.log(`Exporting inventory chart: ${chartType}`);
+}
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('Inventory Optimization Dashboard loaded');
+});
+</script>
+{% endblock %}

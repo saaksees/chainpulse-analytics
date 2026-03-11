@@ -1,0 +1,25 @@
+{
+  "connectors": {
+    "demo_sqlite": {
+      "type": "SQLite",
+      "config": {
+        "database_path": "chainpulse.db",
+        "description": "Demo SQLite database connector"
+      }
+    }
+  },
+  "sync_schedule": {
+    "enabled": false,
+    "interval_minutes": 60,
+    "auto_refresh_dashboards": true
+  },
+  "data_mapping": {
+    "order_id_field": "order_id",
+    "customer_id_field": "customer_id",
+    "product_id_field": "product_id",
+    "order_date_field": "created_at",
+    "sales_amount_field": "total_price",
+    "quantity_field": "quantity"
+  },
+  "last_updated": "2026-03-11T15:30:00"
+}

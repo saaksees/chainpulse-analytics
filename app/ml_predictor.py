@@ -18,7 +18,37 @@ class RiskPredictor:
         self.model = None
         self.label_encoders = None
         self.model_loaded = False
-        self.load_model()
+        self.advanced_predictor = None
+        
+        # Try to load advanced models first
+        self.load_advanced_models()
+        
+        # Fallback to basic models
+        if not self.advanced_predictor:
+            self.load_model()
+    
+    def load_advanced_models(self):
+        """Load advanced ML models if available"""
+        try:
+            import sys
+            sys.path.append('app')
+            from advanced_ml_models import advanced_risk_predictor
+            
+            # Try to load existing advanced models
+            if advanced_risk_predictor.load_models():
+                self.advanced_predictor = advanced_risk_predictor
+                print("✅ Using advanced ML models")
+                return True
+            else:
+                print("⚠️ Advanced models not found, using basic models")
+                return False
+                
+        except ImportError:
+            print("⚠️ Advanced ML modules not available, using basic models")
+            return False
+        except Exception as e:
+            print(f"⚠️ Failed to load advanced models: {e}")
+            return False
     
     def load_model(self):
         """Load the trained model and encoders"""
@@ -50,6 +80,24 @@ class RiskPredictor:
         Returns:
             dict: Prediction results with risk level and probability
         """
+        
+        # Use advanced models if available
+        if self.advanced_predictor:
+            try:
+                result = self.advanced_predictor.predict(order_data, model_name='ensemble')
+                
+                # Add additional fields for compatibility
+                result['probability'] = result.get('confidence', 0.7)
+                result['features_used'] = 'advanced_ensemble'
+                result['model_version'] = 'advanced_v2.0'
+                
+                return result
+                
+            except Exception as e:
+                print(f"⚠️ Advanced prediction failed, using fallback: {e}")
+                # Fall through to basic model
+        
+        # Fallback to basic model prediction
         if not self.model_loaded:
             return self._fallback_prediction(order_data)
         
@@ -70,7 +118,8 @@ class RiskPredictor:
             
             return {
                 'risk_level': risk_level,
-                'probability': float(risk_probability)
+                'probability': float(risk_probability),
+                'model_version': 'basic_v1.0'
             }
             
         except Exception as e:

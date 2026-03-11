@@ -7,6 +7,7 @@
     
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/mobile-responsive.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <style>
@@ -846,6 +847,22 @@
                 <span class="cp-nav-icon">🔍</span>
                 <span class="cp-nav-label">NLP Insights</span>
             </a>
+            <a href="{{ url_for('main.inventory') }}" class="cp-nav-item {% if request.endpoint == 'main.inventory' %}active{% endif %}">
+                <span class="cp-nav-icon">📦</span>
+                <span class="cp-nav-label">Inventory Optimizer</span>
+            </a>
+            
+            <div class="cp-nav-section">Integration</div>
+            <a href="{{ url_for('main.data_connectors') }}" class="cp-nav-item {% if request.endpoint == 'main.data_connectors' %}active{% endif %}">
+                <span class="cp-nav-icon">🔗</span>
+                <span class="cp-nav-label">Data Connectors</span>
+            </a>
+            
+            <div class="cp-nav-section">Machine Learning</div>
+            <a href="{{ url_for('main.ml_models') }}" class="cp-nav-item {% if request.endpoint == 'main.ml_models' %}active{% endif %}">
+                <span class="cp-nav-icon">🧠</span>
+                <span class="cp-nav-label">ML Models</span>
+            </a>
         </div>
     </nav>
     
@@ -896,6 +913,7 @@
     </main>
     
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/mobile-navigation.js') }}"></script>
     <script>
         function toggleUserDropdown() {
             const dropdown = document.querySelector('.cp-user-dropdown');

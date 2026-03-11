@@ -1,0 +1,66 @@
+{
+  "connectors": {
+    "local_sqlite": {
+      "type": "SQLite",
+      "config": {
+        "database_path": "chainpulse.db",
+        "description": "Local SQLite database"
+      }
+    },
+    "production_postgres": {
+      "type": "PostgreSQL",
+      "config": {
+        "host": "localhost",
+        "port": 5432,
+        "database": "supply_chain",
+        "username": "your_username",
+        "password": "your_password",
+        "description": "Production PostgreSQL database"
+      }
+    },
+    "mysql_warehouse": {
+      "type": "MySQL",
+      "config": {
+        "host": "localhost",
+        "port": 3306,
+        "database": "warehouse",
+        "username": "your_username",
+        "password": "your_password",
+        "description": "MySQL data warehouse"
+      }
+    },
+    "shopify_store": {
+      "type": "Shopify",
+      "config": {
+        "shop_name": "your-shop-name",
+        "api_key": "your_shopify_access_token",
+        "description": "Shopify store data"
+      }
+    },
+    "custom_api": {
+      "type": "API",
+      "config": {
+        "base_url": "https://api.yourcompany.com",
+        "api_key": "your_api_key",
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "description": "Custom REST API"
+      }
+    }
+  },
+  "sync_schedule": {
+    "enabled": true,
+    "interval_minutes": 60,
+    "auto_refresh_dashboards": true
+  },
+  "data_mapping": {
+    "order_id_field": "order_id",
+    "customer_id_field": "customer_id",
+    "product_id_field": "product_id",
+    "order_date_field": "created_at",
+    "sales_amount_field": "total_price",
+    "quantity_field": "quantity"
+  },
+  "last_updated": "2026-03-11T12:00:00"
+}
