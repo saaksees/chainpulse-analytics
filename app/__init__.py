@@ -1,11 +1,13 @@
 from flask import Flask, send_from_directory
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
+from flask_socketio import SocketIO
 import os
 
 # Initialize extensions
 bcrypt = Bcrypt()
 login_manager = LoginManager()
+socketio = SocketIO(cors_allowed_origins="*", async_mode='threading')
 
 def create_app():
     # Get absolute path to project root
@@ -53,6 +55,11 @@ def create_app():
     login_manager.login_view = 'auth.login'
     login_manager.login_message = 'Please login to access ChainPulse'
     login_manager.login_message_category = 'info'
+    
+    # Initialize SocketIO
+    socketio.init_app(app)
+    
+    # Note: WebSocket manager removed - real-time features disabled
     
     @login_manager.user_loader
     def load_user(user_id):

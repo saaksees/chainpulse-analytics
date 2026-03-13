@@ -12,7 +12,7 @@ print(f"🔍 Running from: {project_root}")
 print(f"🔍 Templates at: {os.path.join(project_root, 'app', 'templates')}")
 print(f"🔍 home.html exists: {os.path.exists(os.path.join(project_root, 'app', 'templates', 'home.html'))}")
 
-from app import create_app
+from app import create_app, socketio
 
 app = create_app()
 
@@ -24,4 +24,5 @@ if __name__ == '__main__':
     print("║  Press CTRL+C to stop                   ║")
     print("╚══════════════════════════════════════════╝")
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Run with SocketIO support
+    socketio.run(app, debug=True, host='0.0.0.0', port=5000)
